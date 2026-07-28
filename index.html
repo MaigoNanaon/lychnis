@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0f0f1e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Lychnis · 节奏游戏</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ============================================ -->
+  <!-- 页面1: 曲库                                   -->
+  <!-- ============================================ -->
+  <section id="page-library" class="page active">
+    <div class="library-header">
+      <h1 class="library-title">🎵 Lychnis</h1>
+      <p class="library-subtitle">用你喜欢的歌，玩节奏游戏</p>
+    </div>
+    <div class="song-list" id="song-list"></div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- 页面2: 播放页                                 -->
+  <!-- ============================================ -->
+  <section id="page-player" class="page">
+    <div class="player-topbar">
+      <button class="icon-btn" id="player-back-btn">‹</button>
+      <div class="player-nowplaying">
+        <div class="player-nowplaying-label">正在播放</div>
+        <div class="player-nowplaying-title" id="player-song-title">--</div>
+      </div>
+      <div style="width:40px"></div>
+    </div>
+
+    <div class="player-body">
+      <div class="cover-wrap">
+        <div class="cover-disc" id="cover-disc">
+          <div class="cover-disc-inner" id="cover-disc-inner"></div>
+          <div class="cover-disc-center"></div>
+        </div>
+      </div>
+
+      <div class="progress-section">
+        <div class="progress-bar" id="progress-bar">
+          <div class="progress-filled" id="progress-filled"></div>
+        </div>
+        <div class="progress-times">
+          <span id="time-current">0:00</span>
+          <span id="time-total">0:00</span>
+        </div>
+      </div>
+
+      <div class="player-controls">
+        <button class="control-btn" id="btn-stop" title="停止">⏹</button>
+        <button class="control-btn play-btn" id="btn-play" title="播放">▶</button>
+        <button class="control-btn" id="btn-pause" title="暂停">⏸</button>
+      </div>
+
+      <button class="game-entry-btn" id="game-entry-btn">
+        🎮 开始节奏挑战
+      </button>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- 页面3: 游戏页                                 -->
+  <!-- ============================================ -->
+  <section id="page-game" class="page">
+    <div class="game-topbar">
+      <button class="icon-btn" id="game-back-btn">‹</button>
+      <button class="icon-btn" id="game-help-btn">?</button>
+    </div>
+
+    <div class="game-info-bar">
+      <div class="info-item">
+        <div class="info-label">Score</div>
+        <div class="info-value" id="game-score">0</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Combo</div>
+        <div class="info-value" id="game-combo">0</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Accuracy</div>
+        <div class="info-value" id="game-accuracy">100%</div>
+      </div>
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <div class="game-tap-area" id="game-tap-area"></div>
+
+    <!-- 阶段切换遮罩 -->
+    <div class="phase-overlay" id="phase-overlay">
+      <div class="phase-overlay-title" id="phase-overlay-title">演示引导</div>
+      <div class="phase-overlay-subtitle" id="phase-overlay-subtitle">先看一遍节奏，准备好后开始</div>
+      <button class="phase-overlay-btn" id="phase-overlay-btn">开始演示</button>
+    </div>
+
+    <!-- 帮助弹窗 -->
+    <div class="help-modal" id="help-modal">
+      <div class="help-modal-bg" id="help-modal-bg"></div>
+      <div class="help-modal-content">
+        <div class="help-modal-handle"></div>
+        <h3>玩法说明</h3>
+        <div class="help-step">
+          <div class="help-step-num">1</div>
+          <div class="help-step-text">音符从右侧飞向左侧判定线，请观察它们的飞行轨迹。</div>
+        </div>
+        <div class="help-step">
+          <div class="help-step-num">2</div>
+          <div class="help-step-text">当音符到达判定线（发光圆圈）的瞬间，点击屏幕进行判定。</div>
+        </div>
+        <div class="help-step">
+          <div class="help-step-num">3</div>
+          <div class="help-step-text">判定越精准得分越高：Perfect > Great > Good > Miss。连击不中断有额外加分。</div>
+        </div>
+        <div class="help-step">
+          <div class="help-step-num">4</div>
+          <div class="help-step-text">流程：先看一遍演示引导，熟悉节奏后再自己操作。</div>
+        </div>
+        <button class="help-modal-close" id="help-modal-close">知道了</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- 页面4: 分享页                                 -->
+  <!-- ============================================ -->
+  <section id="page-share" class="page">
+    <div class="share-content">
+      <div class="share-grade" id="share-grade">S</div>
+
+      <div class="share-result-card" id="share-result-card">
+        <div class="share-score-main">
+          <div class="share-score-label">FINAL SCORE</div>
+          <div class="share-score-value" id="share-score-value">0</div>
+          <div class="share-score-accuracy" id="share-score-accuracy">准确率 100%</div>
+        </div>
+        <div class="share-stats">
+          <div class="share-stat perfect">
+            <div class="share-stat-label">Perfect</div>
+            <div class="share-stat-value" id="share-perfect">0</div>
+          </div>
+          <div class="share-stat great">
+            <div class="share-stat-label">Great</div>
+            <div class="share-stat-value" id="share-great">0</div>
+          </div>
+          <div class="share-stat good">
+            <div class="share-stat-label">Good</div>
+            <div class="share-stat-value" id="share-good">0</div>
+          </div>
+          <div class="share-stat miss">
+            <div class="share-stat-label">Miss</div>
+            <div class="share-stat-value" id="share-miss">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="share-actions">
+        <button class="share-btn share-btn-primary" id="btn-generate-image">
+          🖼️ 生成分享图
+        </button>
+        <button class="share-btn share-btn-secondary" id="btn-retry">
+          🔄 再玩一次
+        </button>
+        <button class="share-btn share-btn-secondary" id="btn-back-library">
+          🏠 返回曲库
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 分享图预览 -->
+  <div class="share-image-preview" id="share-image-preview">
+    <img id="share-image-img" src="" alt="分享图">
+    <div class="share-image-preview-actions">
+      <button class="share-btn share-btn-secondary" id="btn-close-preview">关闭</button>
+      <button class="share-btn share-btn-primary" id="btn-download-image">💾 长按保存</button>
+    </div>
+    <p style="margin-top:12px;font-size:12px;color:rgba(255,255,255,0.5)">长按图片可保存到相册</p>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+</div>
+
+<script src="js/songs.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/game.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
