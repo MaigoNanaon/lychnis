@@ -260,6 +260,7 @@
           },
           onPhaseChange: (phase) => {
             if (phase === 'ended') {
+              $('#game-abort-btn').style.display = 'none';
               setTimeout(() => openShare(game), 800);
             }
           },
@@ -267,6 +268,7 @@
             state.gameResult = result;
           },
           onAbort: () => {
+            $('#game-abort-btn').style.display = 'none';
             state.game = null;
             showPage('player');
             showToast('游戏已中止');
@@ -288,11 +290,13 @@
     $('#phase-overlay-btn').onclick = () => {
       overlay.classList.remove('show');
       state.game.start();
+      $('#game-abort-btn').style.display = 'block';
     };
     overlay.classList.add('show');
   }
 
   function exitGame() {
+    $('#game-abort-btn').style.display = 'none';
     if (state.game) {
       state.game.destroy();
       state.game = null;
@@ -554,11 +558,15 @@
 
     // 游戏页
     $('#game-back-btn').addEventListener('click', exitGame);
-    $('#game-abort-btn').addEventListener('click', () => {
+    $('#game-abort-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
       if (!state.game || state.game.phase !== 'playing') return;
       if (confirm('确定要中止游戏吗？当前成绩将不会保存。')) {
         state.game.abort();
       }
+    });
+    $('#game-abort-btn').addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
     });
     $('#game-help-btn').addEventListener('click', () => {
       $('#help-modal').classList.add('show');
