@@ -1,23 +1,71 @@
 /**
- * 歌曲数据 & 谱面定义（段落式）
+ * 歌曲数据 & 谱面定义（段落式 · 拍数优先）
  *
- * 谱面格式：每首歌包含一个 segments 数组，音乐连续播放不停顿。
- * 段落分三种类型：
- *   tutorial  教程段 — 扫描线自动点亮音符，玩家观察记忆
- *   play      打击段 — 玩家需在音符位置点击屏幕，模仿前一教程段
- *   idle      空闲段 — 只放歌不操作
+ * ============================================================
+ *  新谱面格式（推荐，写谱极快）
+ * ============================================================
+ *  核心约定：
+ *    - 歌曲上记录 bpm，因此 1 个【四分音符】= 1 拍（beat）。
+ *    - 歌曲上记录总体参数 offset（单位：秒，如 2.34），
+ *      表示「0 拍位置」对应的真实时间。0 点之前用负拍数。
+ *    - 每个段落只写【相对拍数位置】，不再手写绝对毫秒：
+ *        beatStart / beatEnd  段落起止（单位 beat）
+ *        notes               音符位置数组（单位 beat，相对整首歌 0 拍）
  *
- * 每个段落对象：
- *   { type: 'tutorial', start: 0, end: 4000, notes: [1000, 1500, 3500] }
- *   start/end — 段落起止时间（毫秒，歌曲绝对时间）
- *   notes     — 音符时间点数组（毫秒，歌曲绝对时间）
+ *  段落类型（不变）：
+ *    tutorial  教程段 — 扫描线自动点亮音符，玩家观察记忆
+ *    play      打击段 — 玩家需在音符位置点击屏幕，模仿前一教程段
+ *    idle      空闲段 — 只放歌不操作
  *
- * playMode 可选参数（加在 play 段落上）— 控制该乐句打击时扫描线的显示方式：
- *   1  扫描线始终可见（默认）
- *   2  扫描线在前 1/3 逐渐消失
- *   3  扫描线完全隐藏
- *   示例：{ type: 'play', start: 4000, end: 8000, notes: [...], playMode: 2 }
+ *  playMode（仅 play 段，可选，默认 1）：
+ *    1  扫描线始终可见
+ *    2  扫描线在前 1/3 逐渐消失
+ *    3  扫描线完全隐藏
+ *
+ *  运行时由 compileChart(song) 把 beat 编译成绝对毫秒：
+ *    time(ms) = offset(秒)*1000 + beat * (60000 / bpm)
+ *  游戏引擎拿到的是编译后的绝对毫秒，无需改动。
+ *
+ *  每个 seg 单独定义（不自动复制），例如：
+ *    { type: 'tutorial', beatStart: 0,   beatEnd: 4,   notes: [1, 1.5, 3.5] },
+ *    { type: 'play',     beatStart: 4,   beatEnd: 8,   notes: [1, 1.5, 3.5], playMode: 1 },
+ *    { type: 'idle',     beatStart: 8,   beatEnd: 12,  notes: [] },
+ *    { type: 'tutorial', beatStart: 12,  beatEnd: 16,  notes: [1, 1.5, 3.5] },
+ *
+ *  兼容：旧格式（带 start/end 绝对毫秒的段）也能直接放进 segments，
+ *        compileChart 会自动检测并原样返回，无需迁移。
  */
+
+/** 每拍毫秒数 */
+function beatMs(bpm) { return 60000 / bpm; }
+
+/**
+ * 把单个 beat 段编译成绝对毫秒段（返回新对象，不改动入参）。
+ */
+function _compileSeg(seg, offsetSec, bpm) {
+  const unit = beatMs(bpm);
+  const at = (beat) => Math.round(offsetSec * 1000 + beat * unit);
+  return {
+    type: seg.type,
+    start: at(seg.beatStart),
+    end: at(seg.beatEnd),
+    notes: (seg.notes || []).map(at),
+    ...(seg.playMode != null ? { playMode: seg.playMode } : {})
+  };
+}
+
+/**
+ * 编译整首歌的谱面：
+ *  - 若段里出现 beatStart，则按拍编译；
+ *  - 否则原样返回（兼容旧格式）。
+ */
+function compileChart(song) {
+  if (!song.segments || song.segments.length === 0) return [];
+  const isBeatFormat = song.segments.some(s => s.beatStart != null);
+  if (!isBeatFormat) return song.segments; // 旧格式直通
+  const offset = song.offset != null ? song.offset : 0;
+  return song.segments.map(s => _compileSeg(s, offset, song.bpm));
+}
 
 const SONGS = [
   {
@@ -30,59 +78,62 @@ const SONGS = [
     duration: 208,
     difficulty: '简单',
     color: ['#38BDF8', '#0EA5E9'],
+    offset: 0,   // 0 拍位置 = 歌曲 0.000 秒
+    // —— 新格式：每个 seg 单独定义，单位 beat（1 四分音符 = 1 拍） ——
+    // 音符只在 [1, 1.5, 3.5] 拍；play 段 playMode 在 1 / 3 间交替。
     segments: [
-      { type: 'tutorial', start: 0,      end: 4000,   notes: [1000, 1500, 3500] },
-      { type: 'play',     start: 4000,   end: 8000,   notes: [5000, 5500, 7500] , playMode: 1 },
-      { type: 'idle',     start: 8000,   end: 12000,  notes: [] },
-      { type: 'tutorial', start: 12000,  end: 16000,  notes: [13000, 13500, 15500] },
-      { type: 'play',     start: 16000,  end: 20000,  notes: [17000, 17500, 19500] , playMode: 2 },
-      { type: 'idle',     start: 20000,  end: 24000,  notes: [] },
-      { type: 'tutorial', start: 24000,  end: 28000,  notes: [25000, 25500, 27500] },
-      { type: 'play',     start: 28000,  end: 32000,  notes: [29000, 29500, 31500] , playMode: 3 },
-      { type: 'idle',     start: 32000,  end: 36000,  notes: [] },
-      { type: 'tutorial', start: 36000,  end: 40000,  notes: [37000, 37500, 39500] },
-      { type: 'play',     start: 40000,  end: 44000,  notes: [41000, 41500, 43500] , playMode: 1 },
-      { type: 'idle',     start: 44000,  end: 48000,  notes: [] },
-      { type: 'tutorial', start: 48000,  end: 52000,  notes: [49000, 49500, 51500] },
-      { type: 'play',     start: 52000,  end: 56000,  notes: [53000, 53500, 55500] , playMode: 2 },
-      { type: 'idle',     start: 56000,  end: 60000,  notes: [] },
-      { type: 'tutorial', start: 60000,  end: 64000,  notes: [61000, 61500, 63500] },
-      { type: 'play',     start: 64000,  end: 68000,  notes: [65000, 65500, 67500] , playMode: 3 },
-      { type: 'idle',     start: 68000,  end: 72000,  notes: [] },
-      { type: 'tutorial', start: 72000,  end: 76000,  notes: [73000, 73500, 75500] },
-      { type: 'play',     start: 76000,  end: 80000,  notes: [77000, 77500, 79500] , playMode: 1 },
-      { type: 'idle',     start: 80000,  end: 84000,  notes: [] },
-      { type: 'tutorial', start: 84000,  end: 88000,  notes: [85000, 85500, 87500] },
-      { type: 'play',     start: 88000,  end: 92000,  notes: [89000, 89500, 91500] , playMode: 2 },
-      { type: 'idle',     start: 92000,  end: 96000,  notes: [] },
-      { type: 'tutorial', start: 96000,  end: 100000, notes: [97000, 97500, 99500] },
-      { type: 'play',     start: 100000, end: 104000, notes: [101000, 101500, 103500] , playMode: 3 },
-      { type: 'idle',     start: 104000, end: 108000, notes: [] },
-      { type: 'tutorial', start: 108000, end: 112000, notes: [109000, 109500, 111500] },
-      { type: 'play',     start: 112000, end: 116000, notes: [113000, 113500, 115500] , playMode: 1 },
-      { type: 'idle',     start: 116000, end: 120000, notes: [] },
-      { type: 'tutorial', start: 120000, end: 124000, notes: [121000, 121500, 123500] },
-      { type: 'play',     start: 124000, end: 128000, notes: [125000, 125500, 127500] , playMode: 2 },
-      { type: 'idle',     start: 128000, end: 132000, notes: [] },
-      { type: 'tutorial', start: 132000, end: 136000, notes: [133000, 133500, 135500] },
-      { type: 'play',     start: 136000, end: 140000, notes: [137000, 137500, 139500] , playMode: 3 },
-      { type: 'idle',     start: 140000, end: 144000, notes: [] },
-      { type: 'tutorial', start: 144000, end: 148000, notes: [145000, 145500, 147500] },
-      { type: 'play',     start: 148000, end: 152000, notes: [149000, 149500, 151500] , playMode: 1 },
-      { type: 'idle',     start: 152000, end: 156000, notes: [] },
-      { type: 'tutorial', start: 156000, end: 160000, notes: [157000, 157500, 159500] },
-      { type: 'play',     start: 160000, end: 164000, notes: [161000, 161500, 163500] , playMode: 2 },
-      { type: 'idle',     start: 164000, end: 168000, notes: [] },
-      { type: 'tutorial', start: 168000, end: 172000, notes: [169000, 169500, 171500] },
-      { type: 'play',     start: 172000, end: 176000, notes: [173000, 173500, 175500] , playMode: 3 },
-      { type: 'idle',     start: 176000, end: 180000, notes: [] },
-      { type: 'tutorial', start: 180000, end: 184000, notes: [181000, 181500, 183500] },
-      { type: 'play',     start: 184000, end: 188000, notes: [185000, 185500, 187500] , playMode: 1 },
-      { type: 'idle',     start: 188000, end: 192000, notes: [] },
-      { type: 'tutorial', start: 192000, end: 196000, notes: [193000, 193500, 195500] },
-      { type: 'play',     start: 196000, end: 200000, notes: [197000, 197500, 199500] , playMode: 2 },
-      { type: 'idle',     start: 200000, end: 204000, notes: [] },
-      { type: 'tutorial', start: 204000, end: 208000, notes: [205000, 205500, 207500] }
+      { type: 'tutorial', beatStart: 0,   beatEnd: 4,   notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 4,   beatEnd: 8,   notes: [1, 1.5, 3.5], playMode: 1 },
+      { type: 'tutorial', beatStart: 8,   beatEnd: 12,  notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 12,  beatEnd: 16,  notes: [1, 1.5, 3.5], playMode: 3 },
+      { type: 'tutorial', beatStart: 16,  beatEnd: 20,  notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 20,  beatEnd: 24,  notes: [1, 1.5, 3.5], playMode: 1 },
+      { type: 'tutorial', beatStart: 24,  beatEnd: 28,  notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 28,  beatEnd: 32,  notes: [1, 1.5, 3.5], playMode: 3 },
+      { type: 'tutorial', beatStart: 32,  beatEnd: 36,  notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 36,  beatEnd: 40,  notes: [1, 1.5, 3.5], playMode: 1 },
+      { type: 'tutorial', beatStart: 40,  beatEnd: 44,  notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 44,  beatEnd: 48,  notes: [1, 1.5, 3.5], playMode: 3 },
+      { type: 'tutorial', beatStart: 48,  beatEnd: 52,  notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 52,  beatEnd: 56,  notes: [1, 1.5, 3.5], playMode: 1 },
+      { type: 'tutorial', beatStart: 56,  beatEnd: 60,  notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 60,  beatEnd: 64,  notes: [1, 1.5, 3.5], playMode: 3 },
+      { type: 'tutorial', beatStart: 64,  beatEnd: 68,  notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 68,  beatEnd: 72,  notes: [1, 1.5, 3.5], playMode: 1 },
+      { type: 'tutorial', beatStart: 72,  beatEnd: 76,  notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 76,  beatEnd: 80,  notes: [1, 1.5, 3.5], playMode: 3 },
+      { type: 'tutorial', beatStart: 80,  beatEnd: 84,  notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 84,  beatEnd: 88,  notes: [1, 1.5, 3.5], playMode: 1 },
+      { type: 'tutorial', beatStart: 88,  beatEnd: 92,  notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 92,  beatEnd: 96,  notes: [1, 1.5, 3.5], playMode: 3 },
+      { type: 'tutorial', beatStart: 96,  beatEnd: 100, notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 100, beatEnd: 104, notes: [1, 1.5, 3.5], playMode: 1 },
+      { type: 'tutorial', beatStart: 104, beatEnd: 108, notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 108, beatEnd: 112, notes: [1, 1.5, 3.5], playMode: 3 },
+      { type: 'tutorial', beatStart: 112, beatEnd: 116, notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 116, beatEnd: 120, notes: [1, 1.5, 3.5], playMode: 1 },
+      { type: 'tutorial', beatStart: 120, beatEnd: 124, notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 124, beatEnd: 128, notes: [1, 1.5, 3.5], playMode: 3 },
+      { type: 'tutorial', beatStart: 128, beatEnd: 132, notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 132, beatEnd: 136, notes: [1, 1.5, 3.5], playMode: 1 },
+      { type: 'tutorial', beatStart: 136, beatEnd: 140, notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 140, beatEnd: 144, notes: [1, 1.5, 3.5], playMode: 3 },
+      { type: 'tutorial', beatStart: 144, beatEnd: 148, notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 148, beatEnd: 152, notes: [1, 1.5, 3.5], playMode: 1 },
+      { type: 'tutorial', beatStart: 152, beatEnd: 156, notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 156, beatEnd: 160, notes: [1, 1.5, 3.5], playMode: 3 },
+      { type: 'tutorial', beatStart: 160, beatEnd: 164, notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 164, beatEnd: 168, notes: [1, 1.5, 3.5], playMode: 1 },
+      { type: 'tutorial', beatStart: 168, beatEnd: 172, notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 172, beatEnd: 176, notes: [1, 1.5, 3.5], playMode: 3 },
+      { type: 'tutorial', beatStart: 176, beatEnd: 180, notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 180, beatEnd: 184, notes: [1, 1.5, 3.5], playMode: 1 },
+      { type: 'tutorial', beatStart: 184, beatEnd: 188, notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 188, beatEnd: 192, notes: [1, 1.5, 3.5], playMode: 3 },
+      { type: 'tutorial', beatStart: 192, beatEnd: 196, notes: [1, 1.5, 3.5] },
+      { type: 'play',     beatStart: 196, beatEnd: 200, notes: [1, 1.5, 3.5], playMode: 1 },
+      { type: 'idle',     beatStart: 200, beatEnd: 204, notes: [] },
+      { type: 'tutorial', beatStart: 204, beatEnd: 208, notes: [1, 1.5, 3.5] }
     ]
   },
   {
@@ -203,60 +254,36 @@ const SONGS = [
     audio: 'assets/audio/yuureitokyo.mp3',
     bpm: 124,
     duration: 200,
+    offset: 2,
     difficulty: '困难',
     color: ['#A78BFA', '#8B5CF6'],
     segments: [
-{ type: 'tutorial', start: 1500,   end: 5887.09,   notes: [2000, 2483.87, 2967.74, 3451.61, 3935.48, 4419.35, 4903.22, 5387.09] },
-{ type: 'play', start: 5370.96,   end: 9758.05,   notes: [5870.96, 6354.83, 6838.7, 7322.57, 7806.44, 8290.31, 8774.18, 9258.05]  , playMode: 1 },
-{ type: 'tutorial', start: 9241.92,   end: 13629.01,   notes: [9741.92, 10225.79, 10709.66, 11193.53, 11677.4, 12161.27, 12645.14, 12887.08, 13129.01] },
-{ type: 'play', start: 13112.88,   end: 17499.97,   notes: [13612.88, 14096.75, 14580.62, 15064.49, 15548.36, 16032.23, 16516.1, 16758.03, 16999.97] , playMode: 2 },
-{ type: 'tutorial', start: 16983.84,   end: 21370.93,   notes: [17483.84, 17967.71, 18451.58, 18935.45, 19419.32, 19903.19, 20387.06, 20870.93] },
-{ type: 'play', start: 20854.8,   end: 25241.89,   notes: [21354.8, 21838.67, 22322.54, 22806.41, 23290.28, 23774.15, 24258.02, 24741.89] , playMode: 2 },
-{ type: 'tutorial', start: 24725.76,   end: 29112.85,   notes: [25225.76, 25709.63, 26193.5, 26677.37, 27161.24, 27645.11, 28128.98, 28612.85] },
-{ type: 'play', start: 28596.72,   end: 32983.81,   notes: [29096.72, 29580.59, 30064.46, 30548.33, 31032.2, 31516.07, 31999.94, 32483.81] , playMode: 2 },
-{ type: 'tutorial', start: 32467.68,   end: 36854.77,   notes: [32967.68, 33451.55, 33935.42, 34419.29, 34903.16, 35387.03, 35870.9, 36354.77] },
-{ type: 'play', start: 36338.64,   end: 40725.73,   notes: [36838.64, 37322.51, 37806.38, 38290.25, 38774.12, 39257.99, 39741.86, 40225.73] , playMode: 2 },
-{ type: 'tutorial', start: 40209.6,   end: 44596.69,   notes: [40709.6, 41193.47, 41677.34, 42161.21, 42645.08, 43128.95, 43612.82, 44096.69] },
-{ type: 'play', start: 44080.56,   end: 48467.65,   notes: [44580.56, 45064.43, 45548.3, 46032.17, 46516.04, 46999.91, 47483.78, 47967.65] , playMode: 2 },
-{ type: 'tutorial', start: 47951.52,   end: 52338.61,   notes: [48451.52, 48935.39, 49419.26, 49903.13, 50387, 50870.87, 51354.74, 51838.61] },
-{ type: 'play', start: 51822.48,   end: 56209.57,   notes: [52322.48, 52806.35, 53290.22, 53774.09, 54257.96, 54741.83, 55225.7, 55709.57] , playMode: 2 },
-{ type: 'tutorial', start: 55693.44,   end: 60080.53,   notes: [56193.44, 56677.31, 57161.18, 57645.05, 58128.92, 58612.79, 59096.66, 59580.53] },
-{ type: 'play', start: 59564.4,   end: 63951.49,   notes: [60064.4, 60548.27, 61032.14, 61516.01, 61999.88, 62483.75, 62967.62, 63451.49] , playMode: 2 },
-{ type: 'tutorial', start: 63435.36,   end: 67822.45,   notes: [63935.36, 64419.23, 64903.1, 65386.97, 65870.84, 66354.71, 66838.58, 67322.45] },
-{ type: 'play', start: 67306.32,   end: 71693.41,   notes: [67806.32, 68290.19, 68774.06, 69257.93, 69741.8, 70225.67, 70709.54, 71193.41] , playMode: 2 },
-{ type: 'tutorial', start: 71177.28,   end: 75564.37,   notes: [71677.28, 72161.15, 72645.02, 73128.89, 73612.76, 74096.63, 74580.5, 75064.37] },
-{ type: 'play', start: 75048.24,   end: 79435.33,   notes: [75548.24, 76032.11, 76515.98, 76999.85, 77483.72, 77967.59, 78451.46, 78935.33] , playMode: 2 },
-{ type: 'tutorial', start: 78919.2,   end: 83306.29,   notes: [79419.2, 79903.07, 80386.94, 80870.81, 81354.68, 81838.55, 82322.42, 82806.29] },
-{ type: 'play', start: 82790.16,   end: 87177.25,   notes: [83290.16, 83774.03, 84257.9, 84741.77, 85225.64, 85709.51, 86193.38, 86677.25] , playMode: 2 },
-{ type: 'tutorial', start: 86661.12,   end: 91048.21,   notes: [87161.12, 87644.99, 88128.86, 88612.73, 89096.6, 89580.47, 90064.34, 90548.21] },
-{ type: 'play', start: 90532.08,   end: 94919.17,   notes: [91032.08, 91515.95, 91999.82, 92483.69, 92967.56, 93451.43, 93935.3, 94419.17] , playMode: 2 },
-{ type: 'tutorial', start: 94403.04,   end: 98790.13,   notes: [94903.04, 95386.91, 95870.78, 96354.65, 96838.52, 97322.39, 97806.26, 98290.13] },
-{ type: 'play', start: 98274,   end: 102661.09,   notes: [98774, 99257.87, 99741.74, 100225.61, 100709.48, 101193.35, 101677.22, 102161.09] , playMode: 2 },
-{ type: 'tutorial', start: 102144.96,   end: 106532.05,   notes: [102644.96, 103128.83, 103612.7, 104096.57, 104580.44, 105064.31, 105548.18, 106032.05] },
-{ type: 'play', start: 106015.92,   end: 110403.01,   notes: [106515.92, 106999.79, 107483.66, 107967.53, 108451.4, 108935.27, 109419.14, 109903.01] , playMode: 2 },
-{ type: 'tutorial', start: 109886.88,   end: 114273.97,   notes: [110386.88, 110870.75, 111354.62, 111838.49, 112322.36, 112806.23, 113290.1, 113773.97] },
-{ type: 'play', start: 113757.84,   end: 118144.93,   notes: [114257.84, 114741.71, 115225.58, 115709.45, 116193.32, 116677.19, 117161.06, 117644.93] , playMode: 2 },
-{ type: 'tutorial', start: 117628.8,   end: 122015.89,   notes: [118128.8, 118612.67, 119096.54, 119580.41, 120064.28, 120548.15, 121032.02, 121515.89] },
-{ type: 'play', start: 121499.76,   end: 125886.85,   notes: [121999.76, 122483.63, 122967.5, 123451.37, 123935.24, 124419.11, 124902.98, 125386.85] , playMode: 2 },
-{ type: 'tutorial', start: 125370.72,   end: 129757.81,   notes: [125870.72, 126354.59, 126838.46, 127322.33, 127806.2, 128290.07, 128773.94, 129257.81] },
-{ type: 'play', start: 129241.68,   end: 133628.77,   notes: [129741.68, 130225.55, 130709.42, 131193.29, 131677.16, 132161.03, 132644.9, 133128.77] , playMode: 2 },
-{ type: 'tutorial', start: 133112.64,   end: 137499.73,   notes: [133612.64, 134096.51, 134580.38, 135064.25, 135548.12, 136031.99, 136515.86, 136999.73] },
-{ type: 'play', start: 136983.6,   end: 141370.69,   notes: [137483.6, 137967.47, 138451.34, 138935.21, 139419.08, 139902.95, 140386.82, 140870.69] , playMode: 2 },
-{ type: 'tutorial', start: 140854.56,   end: 145241.65,   notes: [141354.56, 141838.43, 142322.3, 142806.17, 143290.04, 143773.91, 144257.78, 144741.65] },
-{ type: 'play', start: 144725.52,   end: 149112.61,   notes: [145225.52, 145709.39, 146193.26, 146677.13, 147161, 147644.87, 148128.74, 148612.61] , playMode: 2 },
-{ type: 'tutorial', start: 148596.48,   end: 152983.57,   notes: [149096.48, 149580.35, 150064.22, 150548.09, 151031.96, 151515.83, 151999.7, 152483.57] },
-{ type: 'play', start: 152467.44,   end: 156854.53,   notes: [152967.44, 153451.31, 153935.18, 154419.05, 154902.92, 155386.79, 155870.66, 156354.53] , playMode: 2 },
-{ type: 'tutorial', start: 156338.4,   end: 160725.49,   notes: [156838.4, 157322.27, 157806.14, 158290.01, 158773.88, 159257.75, 159741.62, 160225.49] },
-{ type: 'play', start: 160209.36,   end: 164596.45,   notes: [160709.36, 161193.23, 161677.1, 162160.97, 162644.84, 163128.71, 163612.58, 164096.45] , playMode: 2 },
-{ type: 'tutorial', start: 164080.32,   end: 168467.41,   notes: [164580.32, 165064.19, 165548.06, 166031.93, 166515.8, 166999.67, 167483.54, 167967.41] },
-{ type: 'play', start: 167951.28,   end: 172338.37,   notes: [168451.28, 168935.15, 169419.02, 169902.89, 170386.76, 170870.63, 171354.5, 171838.37] , playMode: 2 },
-{ type: 'tutorial', start: 171822.24,   end: 176209.33,   notes: [172322.24, 172806.11, 173289.98, 173773.85, 174257.72, 174741.59, 175225.46, 175709.33] },
-{ type: 'play', start: 175693.2,   end: 180080.29,   notes: [176193.2, 176677.07, 177160.94, 177644.81, 178128.68, 178612.55, 179096.42, 179580.29] , playMode: 2 },
-{ type: 'tutorial', start: 179564.16,   end: 183951.25,   notes: [180064.16, 180548.03, 181031.9, 181515.77, 181999.64, 182483.51, 182967.38, 183451.25] },
-{ type: 'play', start: 183435.12,   end: 187822.21,   notes: [183935.12, 184418.99, 184902.86, 185386.73, 185870.6, 186354.47, 186838.34, 187322.21] , playMode: 2 },
-{ type: 'tutorial', start: 187306.08,   end: 191693.17,   notes: [187806.08, 188289.95, 188773.82, 189257.69, 189741.56, 190225.43, 190709.3, 191193.17] },
-{ type: 'play', start: 191177.04,   end: 195564.13,   notes: [191677.04, 192160.91, 192644.78, 193128.65, 193612.52, 194096.39, 194580.26, 195064.13] , playMode: 2 },
-    ]
+      { type: 'tutorial', beatStart: -0.5,   beatEnd: 7.5,   notes: [0, 1, 2, 3, 4, 5, 6, 7] },
+      { type: 'play',     beatStart: 7.5,   beatEnd: 15.5,   notes: [8, 9, 10, 11, 12, 13, 14, 15], playMode: 1 },
+      { type: 'tutorial', beatStart: 15.5,   beatEnd: 23.5,   notes: [16, 17, 18, 19, 20, 21, 22, 22.5, 23] },
+      { type: 'play',     beatStart: 23.5,   beatEnd: 31.5,   notes: [24, 25, 26, 27, 28, 29, 30, 30.5, 31], playMode: 1 },
+      { type: 'tutorial', beatStart: 31.5,   beatEnd: 39.5,   notes: [32, 33, 34, 36, 37, 38]},
+      { type: 'play',     beatStart: 39.5,   beatEnd: 47.5,   notes: [40, 41, 42, 44, 45, 46], playMode: 1 },
+      { type: 'tutorial', beatStart: 47.5,   beatEnd: 55.5,   notes: [48, 48.5, 50, 50.5, 52, 52.5, 54, 54.5]},
+      { type: 'play',     beatStart: 55.5,   beatEnd: 63.5,   notes: [56, 56.5, 58, 58.5, 60, 60.5, 62, 62.5], playMode: 1 },
+      { type: 'idle', beatStart: 63.5,   beatEnd: 79.5},
+      { type: 'tutorial', beatStart: 79.5,   beatEnd: 87.5,   notes: [80, 81, 81.5, 82, 84, 86, 87]},
+      { type: 'play',     beatStart: 87.5,   beatEnd: 95.5,   notes: [88, 89, 89.5, 90, 92, 94, 95], playMode: 2 },
+      { type: 'tutorial', beatStart: 95.5,   beatEnd: 103.5,   notes: [96, 96.5, 98, 98.5, 100, 100.5, 102, 102.5]},
+      { type: 'play',     beatStart: 103.5,   beatEnd: 111.5,   notes: [104, 104.5, 106, 106.5, 108, 108.5, 110, 110.5], playMode: 2 },
+      { type: 'tutorial', beatStart: 111.5,   beatEnd: 115.5,   notes: [112, 112.75, 113.5, 114.5, 115]},
+      { type: 'play',     beatStart: 115.5,   beatEnd: 119.5,   notes: [116, 116.75, 117.5, 118.5, 119], playMode: 2 },
+      { type: 'tutorial', beatStart: 119.5,   beatEnd: 123.5,   notes: [121, 121.5, 123]},
+      { type: 'play',     beatStart: 123.5,   beatEnd: 127.5,   notes: [125, 125.5, 127], playMode: 2 },
+      { type: 'idle', beatStart: 119.5,   beatEnd: 123.5,   notes: [121, 121.5, 123]},
+      { type: 'tutorial', beatStart: 119.5,   beatEnd: 123.5,   notes: [121, 121.5, 123]},
+      { type: 'play',     beatStart: 123.5,   beatEnd: 127.5,   notes: [125, 125.5, 127], playMode: 2 },
+      { type: 'idle',     beatStart: 127.5,   beatEnd: 131.5},
+      { type: 'tutorial', beatStart: 131.5,   beatEnd: 139.5,   notes: [132, 133, 134, 135, 136, 137, 138, 139]},
+      { type: 'play',     beatStart: 139.5,   beatEnd: 147.5,   notes: [140, 141, 142, 143, 144, 145, 146, 147], playMode: 2 },
+      { type: 'tutorial', beatStart: 147.5,   beatEnd: 155.5,   notes: [148, 149, 150, 151, 152, 153, 154, 155]},
+      { type: 'play',     beatStart: 155.5,   beatEnd: 163.5,   notes: [156, 157, 158, 159, 160, 161, 162, 163], playMode: 2 },
+      ]
   }
 ];
 
