@@ -779,6 +779,28 @@ body::before {
   100% { opacity: 0; transform: translate(-50%, -50%) scale(1) translateY(-30px); }
 }
 
+/* idle 段中央 message */
+.game-idle-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-shadow: 0 0 20px rgba(255,255,255,0.1);
+  z-index: 20;
+  pointer-events: none;
+  text-align: center;
+  font-family: 'Baloo 2', 'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif;
+  animation: idleFadeIn 0.4s ease-out;
+}
+
+@keyframes idleFadeIn {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
 /* 阶段切换遮罩 */
 .phase-overlay {
   position: absolute;
