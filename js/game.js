@@ -519,6 +519,6 @@ class RhythmGame {
     return { perfect: 'Q!', great: '好', good: '嗯', miss: '呀!' }[result] || result;
   }
   _judgeSize(result) {
-    return result === 'perfect' ? 19 : 0;
+    return result === 'perfect' ? 20 : 0;
   }
 }

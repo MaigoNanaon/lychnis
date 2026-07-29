@@ -683,7 +683,7 @@ body::before {
 .judge-text {
   position: absolute;
   top: -36px;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 900;
   letter-spacing: 0.5px;
   transform: translateX(-50%);
