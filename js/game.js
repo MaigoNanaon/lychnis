@@ -1,31 +1,24 @@
 /**
- * 节奏游戏引擎 —— 扫描线式
+ * 节奏游戏引擎（DOM 版）
+ * 用 DOM 元素替代 Canvas，彻底避免移动端 Canvas 尺寸问题
  *
- * 玩法：
- * - 屏幕中央有一条圆角矩形长条，代表整首歌的时间轴
- * - 一条荧光竖条（扫描线）从左向右匀速滑过
- * - 谱面上的 tap 时间点对应长条上的固定位置（暗色圆点）
- * - 扫描线经过圆点时：
- *     演示阶段 → 自动点亮，播放打点效果
- *     玩家阶段 → 玩家需在此时点击屏幕进行判定
- *
- * 判定窗口（毫秒）：
- *   Perfect  ±50ms
- *   Great    ±100ms
- *   Good     ±150ms
- *   Miss     > 180ms 未点击
+ * 结构：
+ *   .game-track         圆角长条
+ *     .track-progress   已扫过进度
+ *     .track-notes      音符容器
+ *       .note           音符圆点
+ *     .track-scanline   荧光扫描线
+ *   .game-judge-text    飘动判定文字容器
  */
 
 class RhythmGame {
-  constructor(canvas, chart, audioEngine, duration, callbacks = {}) {
-    this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
-    this.chart = chart;
+  constructor(container, segments, audioEngine, duration, callbacks = {}) {
+    this.container = container;
+    this.segments = segments;
     this.audio = audioEngine;
-    this.duration = duration;               // 总时长（毫秒）
+    this.duration = duration;
     this.callbacks = callbacks;
 
-    this.notes = [];
     this.score = 0;
     this.combo = 0;
     this.maxCombo = 0;
@@ -36,77 +29,98 @@ class RhythmGame {
     this.totalNotes = 0;
     this.judgeCount = 0;
 
-    this.phase = 'idle';                    // idle | demo | play | ended
+    this.phase = 'idle';
     this.rafId = null;
 
-    // 布局参数（_resize 中计算）
-    this.barX = 0;
-    this.barY = 0;
-    this.barW = 0;
-    this.barH = 56;
-    this.barRadius = 28;
-
-    // 点击闪光
-    this.tapFlash = 0;
-
-    // 判定文字飘动列表 [{x, y, text, color, born}]
+    this.segmentStates = [];
+    this.noteEls = [];          // { el, note, segIndex }
     this.judgeTexts = [];
+
+    // DOM 引用
+    this.trackEl = null;
+    this.progressEl = null;
+    this.scanlineEl = null;
+    this.notesEl = null;
+    this.judgeLayer = null;
+    this.labelEl = null;
+  }
+
+  // ============================================
+  // 构建 DOM
+  // ============================================
+  _build() {
+    this.container.innerHTML = '';
+
+    // 段落标签
+    this.labelEl = document.createElement('div');
+    this.labelEl.className = 'game-seg-label';
+    this.container.appendChild(this.labelEl);
+
+    // 长条
+    this.trackEl = document.createElement('div');
+    this.trackEl.className = 'game-track';
+
+    // 进度填充
+    this.progressEl = document.createElement('div');
+    this.progressEl.className = 'track-progress';
+    this.trackEl.appendChild(this.progressEl);
+
+    // 音符容器
+    this.notesEl = document.createElement('div');
+    this.notesEl.className = 'track-notes';
+    this.trackEl.appendChild(this.notesEl);
+
+    // 扫描线
+    this.scanlineEl = document.createElement('div');
+    this.scanlineEl.className = 'track-scanline';
+    this.trackEl.appendChild(this.scanlineEl);
+
+    this.container.appendChild(this.trackEl);
+
+    // 判定文字层
+    this.judgeLayer = document.createElement('div');
+    this.judgeLayer.className = 'game-judge-layer';
+    this.container.appendChild(this.judgeLayer);
   }
 
   // ============================================
   // 生命周期
   // ============================================
   init() {
-    this._resize();
-    this._resetNotes();
-    this.totalNotes = this.notes.length;
-    this._draw();
-  }
-
-  startDemo() {
-    this.phase = 'demo';
-    this._resetNotes();
-    this.audio.onTimeUpdate = (t) => this._update(t);
-    this.audio.playFrom(0);
-    if (this.callbacks.onPhaseChange) this.callbacks.onPhaseChange('demo');
+    this._build();
+    this._reset();
     this._loop();
   }
 
-  startPlay() {
-    this.phase = 'play';
-    this._resetNotes();
-    this.score = 0;
-    this.combo = 0;
-    this.maxCombo = 0;
-    this.perfectCount = 0;
-    this.greatCount = 0;
-    this.goodCount = 0;
-    this.missCount = 0;
-    this.judgeCount = 0;
+  start() {
+    this.phase = 'playing';
+    this._reset();
+    this._buildNotes();
     this.audio.onTimeUpdate = (t) => this._update(t);
     this.audio.playFrom(0);
-    if (this.callbacks.onPhaseChange) this.callbacks.onPhaseChange('play');
-    this._loop();
+    if (this.callbacks.onPhaseChange) this.callbacks.onPhaseChange('playing');
   }
 
   destroy() {
     this._stopLoop();
     this.audio.stop();
     this.audio.onTimeUpdate = null;
+    if (this.container) this.container.innerHTML = '';
   }
 
   // ============================================
-  // 玩家点击 & 判定
+  // 玩家点击
   // ============================================
   tap() {
-    if (this.phase !== 'play') return;
-    this.tapFlash = 1;
-
+    if (this.phase !== 'playing') return;
     const currentTime = this.audio.getCurrentTime();
+    const seg = this._findSegmentAt(currentTime);
+    if (!seg || seg.type !== 'play') return;
+
+    const state = this.segmentStates[seg._index];
     let bestNote = null;
     let bestDiff = Infinity;
-
-    for (const note of this.notes) {
+    for (const note of state.notes) {
       if (note.judged) continue;
       const diff = note.time - currentTime;
       if (Math.abs(diff) <= 180 && Math.abs(diff) < Math.abs(bestDiff)) {
@@ -114,53 +128,34 @@ class RhythmGame {
         bestDiff = diff;
       }
     }
-
-    if (bestNote) {
-      this._judge(bestNote, bestDiff);
-    }
+    if (bestNote) this._judge(bestNote, bestDiff, seg);
   }
 
-  _judge(note, diff) {
+  _judge(note, diff, seg) {
     const absDiff = Math.abs(diff);
     let result;
-    if (absDiff <= 50) {
-      result = 'perfect';
-      this.score += 100 + this.combo * 2;
-      this.perfectCount++;
-    } else if (absDiff <= 100) {
-      result = 'great';
-      this.score += 70 + this.combo;
-      this.greatCount++;
-    } else if (absDiff <= 150) {
-      result = 'good';
-      this.score += 40;
-      this.goodCount++;
-    } else {
-      result = 'miss';
-      this.missCount++;
-    }
+    if (absDiff <= 50) { result = 'perfect'; this.score += 100 + this.combo * 2; this.perfectCount++; }
+    else if (absDiff <= 100) { result = 'great'; this.score += 70 + this.combo; this.greatCount++; }
+    else if (absDiff <= 150) { result = 'good'; this.score += 40; this.goodCount++; }
+    else { result = 'miss'; this.missCount++; }
 
-    if (result !== 'miss') {
-      this.combo++;
-      if (this.combo > this.maxCombo) this.maxCombo = this.combo;
-    } else {
-      this.combo = 0;
-    }
+    if (result !== 'miss') { this.combo++; if (this.combo > this.maxCombo) this.maxCombo = this.combo; }
+    else this.combo = 0;
 
     note.judged = true;
     note.judgeResult = result;
     note.judgeTime = performance.now();
     this.judgeCount++;
 
-    // 添加飘动判定文字
-    const nx = this._timeToX(note.time);
-    this.judgeTexts.push({
-      x: nx,
-      y: this.barY - 16,
-      text: result.toUpperCase(),
-      color: this._resultColor(result),
-      born: performance.now()
-    });
+    // 更新音符视觉
+    const noteData = this.noteEls.find(n => n.note === note);
+    if (noteData) {
+      noteData.el.classList.add('hit', result);
+      setTimeout(() => noteData.el.classList.remove('hit'), 500);
+    }
+
+    // 飘动文字
+    this._addJudgeText(note.time, seg, result.toUpperCase(), this._resultColor(result));
 
     if (this.callbacks.onJudge) {
       this.callbacks.onJudge({ result, combo: this.combo, score: this.score });
@@ -168,39 +163,39 @@ class RhythmGame {
   }
 
   // ============================================
-  // 每帧更新（逻辑）
+  // 每帧更新
   // ============================================
   _update(currentTime) {
-    // 漏过的音符标记 miss
-    for (const note of this.notes) {
-      if (!note.judged && note.time < currentTime - 180) {
-        this._judge(note, 999);
-      }
-    }
+    const seg = this._findSegmentAt(currentTime);
 
-    // 演示阶段自动点亮
-    if (this.phase === 'demo') {
-      for (const note of this.notes) {
-        if (!note.demoHit && note.time <= currentTime && note.time > currentTime - 80) {
-          note.demoHit = true;
-          note.demoHitTime = performance.now();
-          // 演示也加飘动文字
-          const nx = this._timeToX(note.time);
-          this.judgeTexts.push({
-            x: nx,
-            y: this.barY - 16,
-            text: 'TAP',
-            color: '#00FFC8',
-            born: performance.now()
-          });
+    // 漏过标记 miss
+    if (seg && seg.type === 'play') {
+      const state = this.segmentStates[seg._index];
+      for (const note of state.notes) {
+        if (!note.judged && note.time < currentTime - 180) {
+          this._judge(note, 999, seg);
         }
       }
     }
 
-    // 结束检查
-    if (this.phase === 'play' && this.judgeCount >= this.totalNotes && this.totalNotes > 0) {
-      this._end();
+    // 教程段自动点亮
+    if (seg && seg.type === 'tutorial') {
+      const state = this.segmentStates[seg._index];
+      for (const note of state.notes) {
+        if (!note.demoHit && note.time <= currentTime && note.time > currentTime - 80) {
+          note.demoHit = true;
+          note.demoHitTime = performance.now();
+          const noteData = this.noteEls.find(n => n.note === note);
+          if (noteData) {
+            noteData.el.classList.add('hit', 'perfect');
+            setTimeout(() => noteData.el.classList.remove('hit'), 500);
+          }
+          this._addJudgeText(note.time, seg, 'TAP', '#00FFC8');
+        }
+      }
     }
+
+    if (currentTime >= this.duration) this._end();
   }
 
   _end() {
@@ -210,14 +205,10 @@ class RhythmGame {
     if (this.callbacks.onPhaseChange) this.callbacks.onPhaseChange('ended');
     if (this.callbacks.onEnd) {
       this.callbacks.onEnd({
-        score: this.score,
-        maxCombo: this.maxCombo,
-        perfect: this.perfectCount,
-        great: this.greatCount,
-        good: this.goodCount,
-        miss: this.missCount,
-        total: this.totalNotes,
-        accuracy: this._calcAccuracy()
+        score: this.score, maxCombo: this.maxCombo,
+        perfect: this.perfectCount, great: this.greatCount,
+        good: this.goodCount, miss: this.missCount,
+        total: this.totalNotes, accuracy: this._calcAccuracy()
       });
     }
   }
@@ -228,21 +219,49 @@ class RhythmGame {
     return Math.round((weight / this.totalNotes) * 1000) / 10;
   }
 
-  _resetNotes() {
-    this.notes = this.chart.map(n => ({
-      ...n,
-      judged: false,
-      judgeResult: null,
-      demoHit: false,
-      demoHitTime: 0
-    }));
-    this.totalNotes = this.notes.length;
-    this.judgeCount = 0;
+  _reset() {
+    this.score = 0; this.combo = 0; this.maxCombo = 0;
+    this.perfectCount = 0; this.greatCount = 0; this.goodCount = 0;
+    this.missCount = 0; this.judgeCount = 0;
     this.judgeTexts = [];
+    this.noteEls = [];
+
+    this.segmentStates = this.segments.map((seg, i) => {
+      const notes = seg.notes.map(t => ({
+        time: t, judged: false, judgeResult: null,
+        demoHit: false, demoHitTime: 0, judgeTime: 0
+      }));
+      return { notes, _index: i };
+    });
+
+    this.totalNotes = this.segments
+      .filter(s => s.type === 'play')
+      .reduce((sum, s) => sum + s.notes.length, 0);
+  }
+
+  /** 为当前段落构建音符 DOM */
+  _buildNotes() {
+    if (!this.notesEl) return;
+    this.notesEl.innerHTML = '';
+    this.noteEls = [];
+
+    const t = this.audio.getCurrentTime();
+    const seg = this._findSegmentAt(t);
+    if (!seg) return;
+
+    const state = this.segmentStates[seg._index];
+    for (const note of state.notes) {
+      const el = document.createElement('div');
+      el.className = 'note';
+      const ratio = (note.time - seg.start) / (seg.end - seg.start);
+      el.style.left = (ratio * 100) + '%';
+      this.notesEl.appendChild(el);
+      this.noteEls.push({ el, note, segIndex: seg._index });
+    }
   }
 
   // ============================================
-  // 渲染
+  // 渲染循环
   // ============================================
   _loop() {
     this._draw();
@@ -250,281 +269,86 @@ class RhythmGame {
   }
 
   _stopLoop() {
-    if (this.rafId) {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = null;
-    }
-  }
-
-  _resize() {
-    const dpr = window.devicePixelRatio || 1;
-    const rect = this.canvas.getBoundingClientRect();
-    this.canvas.width = rect.width * dpr;
-    this.canvas.height = rect.height * dpr;
-    this.ctx.scale(dpr, dpr);
-    this.viewW = rect.width;
-    this.viewH = rect.height;
-
-    // 长条布局：左右各留 28px 边距，垂直居中偏下
-    const pad = 28;
-    this.barX = pad;
-    this.barW = this.viewW - pad * 2;
-    this.barH = Math.min(56, this.viewH * 0.08);
-    this.barRadius = this.barH / 2;
-    this.barY = this.viewH * 0.52 - this.barH / 2;
-  }
-
-  /** 毫秒时间 → 长条上的 X 坐标 */
-  _timeToX(time) {
-    const ratio = Math.max(0, Math.min(1, time / this.duration));
-    return this.barX + ratio * this.barW;
+    if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
   }
 
   _draw() {
-    const ctx = this.ctx;
-    const w = this.viewW;
-    const h = this.viewH;
     const t = this.audio.getCurrentTime();
+    const seg = this._findSegmentAt(t);
 
-    ctx.clearRect(0, 0, w, h);
+    if (!seg || !this.trackEl) return;
 
-    // 背景
-    const bg = ctx.createLinearGradient(0, 0, 0, h);
-    bg.addColorStop(0, '#1a1a2e');
-    bg.addColorStop(1, '#16213e');
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, w, h);
-
-    // 长条轨道
-    this._drawBar(ctx, t);
-
-    // 音符圆点
-    this._drawNotes(ctx, t);
-
-    // 扫描线
-    this._drawScanLine(ctx, t);
-
-    // 点击闪光
-    if (this.tapFlash > 0) {
-      this._drawTapFlash(ctx, t);
-      this.tapFlash -= 0.06;
-      if (this.tapFlash < 0) this.tapFlash = 0;
+    // 段落标签
+    const labels = {
+      tutorial: { text: '👁 教程段 · 观察记忆节奏', cls: 'label-tutorial' },
+      play: { text: '👆 打击段 · 点击屏幕模仿节奏', cls: 'label-play' },
+      idle: { text: '🎵 欣赏中', cls: 'label-idle' }
+    };
+    const info = labels[seg.type];
+    if (info) {
+      this.labelEl.textContent = info.text;
+      this.labelEl.className = 'game-seg-label ' + info.cls;
     }
 
-    // 飘动判定文字
-    this._drawJudgeTexts(ctx);
+    // 扫描线位置（段落内百分比）
+    const ratio = Math.max(0, Math.min(1, (t - seg.start) / (seg.end - seg.start)));
+    const pct = (ratio * 100) + '%';
 
-    // 阶段提示
-    this._drawPhaseText(ctx, w);
-  }
+    if (this.scanlineEl) this.scanlineEl.style.left = pct;
+    if (this.progressEl) this.progressEl.style.width = pct;
 
-  _drawBar(ctx, t) {
-    const { barX: x, barY: y, barW: w, barH: hh, barRadius: r } = this;
-
-    // 底层轨道（暗色圆角矩形）
-    ctx.fillStyle = 'rgba(255,255,255,0.06)';
-    this._roundRect(ctx, x, y, w, hh, r);
-    ctx.fill();
-
-    // 轨道边框
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-    ctx.lineWidth = 1;
-    this._roundRect(ctx, x, y, w, hh, r);
-    ctx.stroke();
-
-    // 已扫过的进度填充
-    const scanX = this._timeToX(t);
-    if (scanX > x) {
-      const fillW = Math.min(scanX - x, w);
-      const grad = ctx.createLinearGradient(x, 0, scanX, 0);
-      grad.addColorStop(0, 'rgba(0,255,200,0.05)');
-      grad.addColorStop(1, 'rgba(0,255,200,0.20)');
-      ctx.fillStyle = grad;
-      this._roundRect(ctx, x, y, fillW, hh, r);
-      ctx.fill();
-    }
-  }
-
-  _drawScanLine(ctx, t) {
-    const x = this._timeToX(t);
-    const top = this.barY - 24;
-    const bot = this.barY + this.barH + 24;
-
-    // 光晕
-    const glow = ctx.createLinearGradient(x - 18, 0, x + 18, 0);
-    glow.addColorStop(0, 'rgba(0,255,200,0)');
-    glow.addColorStop(0.5, 'rgba(0,255,200,0.45)');
-    glow.addColorStop(1, 'rgba(0,255,200,0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(x - 18, top, 36, bot - top);
-
-    // 主线
-    ctx.strokeStyle = '#00FFC8';
-    ctx.lineWidth = 3;
-    ctx.shadowColor = '#00FFC8';
-    ctx.shadowBlur = 12;
-    ctx.beginPath();
-    ctx.moveTo(x, top);
-    ctx.lineTo(x, bot);
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-
-    // 顶部 & 底部小圆点
-    ctx.fillStyle = '#00FFC8';
-    ctx.beginPath();
-    ctx.arc(x, top, 5, 0, Math.PI * 2);
-    ctx.arc(x, bot, 5, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  _drawNotes(ctx, t) {
-    for (const note of this.notes) {
-      const x = this._timeToX(note.time);
-      const cy = this.barY + this.barH / 2;
-
-      // 演示阶段自动点亮
-      if (this.phase === 'demo' && note.demoHit) {
-        const elapsed = performance.now() - (note.demoHitTime || 0);
-        this._drawLitNote(ctx, x, cy, elapsed);
-        continue;
-      }
-
-      // 玩家阶段已判定
-      if (note.judged) {
-        const elapsed = performance.now() - (note.judgeTime || 0);
-        if (note.judgeResult !== 'miss') {
-          this._drawLitNote(ctx, x, cy, elapsed);
-        } else {
-          this._drawMissNote(ctx, x, cy);
-        }
-        continue;
-      }
-
-      // 未判定：暗色圆点
-      this._drawDimNote(ctx, x, cy);
-    }
-  }
-
-  _drawDimNote(ctx, x, y) {
-    const r = 7;
-    ctx.fillStyle = 'rgba(255,255,255,0.25)';
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
-  _drawLitNote(ctx, x, y, elapsed) {
-    // 点亮后有脉冲扩散效果
-    const pulse = Math.min(1, elapsed / 100);
-    const r = 7 + pulse * 4;
-
-    // 扩散环
-    if (elapsed < 500) {
-      const ringR = r + (elapsed / 500) * 20;
-      const ringAlpha = (1 - elapsed / 500) * 0.6;
-      ctx.strokeStyle = `rgba(0,255,200,${ringAlpha})`;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(x, y, ringR, 0, Math.PI * 2);
-      ctx.stroke();
+    // 段落切换时重建音符
+    if (seg._index !== this._lastSegIndex) {
+      this._buildNotes();
+      this._lastSegIndex = seg._index;
     }
 
-    // 发光圆点
-    ctx.shadowColor = '#00FFC8';
-    ctx.shadowBlur = 16;
-    const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
-    grad.addColorStop(0, '#ffffff');
-    grad.addColorStop(0.4, '#00FFC8');
-    grad.addColorStop(1, '#008F7A');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
+    // 清理过期飘动文字
+    this._updateJudgeTexts();
   }
 
-  _drawMissNote(ctx, x, y) {
-    ctx.strokeStyle = 'rgba(255,107,107,0.5)';
-    ctx.lineWidth = 2;
-    const s = 6;
-    ctx.beginPath();
-    ctx.moveTo(x - s, y - s);
-    ctx.lineTo(x + s, y + s);
-    ctx.moveTo(x + s, y - s);
-    ctx.lineTo(x - s, y + s);
-    ctx.stroke();
+  // ============================================
+  // 飘动判定文字
+  // ============================================
+  _addJudgeText(time, seg, text, color) {
+    const el = document.createElement('div');
+    el.className = 'judge-text';
+    el.textContent = text;
+    el.style.color = color;
+    const ratio = (time - seg.start) / (seg.end - seg.start);
+    el.style.left = (ratio * 100) + '%';
+    this.judgeLayer.appendChild(el);
+    this.judgeTexts.push({ el, born: performance.now() });
   }
 
-  _drawTapFlash(ctx, t) {
-    const x = this._timeToX(t);
-    const y = this.barY + this.barH / 2;
-    const r = 16 + (1 - this.tapFlash) * 30;
-    const alpha = this.tapFlash * 0.5;
-
-    ctx.strokeStyle = `rgba(0,255,200,${alpha})`;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
-  _drawJudgeTexts(ctx) {
+  _updateJudgeTexts() {
     const now = performance.now();
-    this.judgeTexts = this.judgeTexts.filter(jt => now - jt.born < 800);
-    for (const jt of this.judgeTexts) {
-      const elapsed = now - jt.born;
-      const alpha = 1 - elapsed / 800;
-      const offsetY = (elapsed / 800) * 24;
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = jt.color;
-      ctx.font = 'bold 15px -apple-system, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(jt.text, jt.x, jt.y - offsetY);
-    }
-    ctx.globalAlpha = 1;
-    ctx.textAlign = 'left';
-  }
-
-  _drawPhaseText(ctx, w) {
-    ctx.textAlign = 'center';
-    if (this.phase === 'demo') {
-      ctx.fillStyle = 'rgba(0,255,200,0.9)';
-      ctx.font = 'bold 15px -apple-system, sans-serif';
-      ctx.fillText('演示中 · 请观察节奏', w / 2, this.barY - 48);
-    } else if (this.phase === 'play') {
-      ctx.fillStyle = 'rgba(255,255,255,0.45)';
-      ctx.font = '14px -apple-system, sans-serif';
-      ctx.fillText('扫描线经过圆点时点击屏幕', w / 2, this.barY - 48);
-    }
-    ctx.textAlign = 'left';
+    this.judgeTexts = this.judgeTexts.filter(jt => {
+      const age = now - jt.born;
+      if (age > 800) {
+        if (jt.el.parentNode) jt.el.parentNode.removeChild(jt.el);
+        return false;
+      }
+      return true;
+    });
   }
 
   // ============================================
-  // 工具方法
+  // 工具
   // ============================================
+  _findSegmentAt(time) {
+    for (let i = 0; i < this.segments.length; i++) {
+      const s = this.segments[i];
+      if (time >= s.start && time < s.end) return { ...s, _index: i };
+    }
+    if (this.segments.length > 0) {
+      const last = this.segments[this.segments.length - 1];
+      return { ...last, _index: this.segments.length - 1 };
+    }
+    return null;
+  }
+
   _resultColor(result) {
-    return {
-      perfect: '#00FFC8',
-      great: '#4ECDC4',
-      good: '#FFD93D',
-      miss: '#FF6B6B'
-    }[result] || '#fff';
-  }
-
-  _roundRect(ctx, x, y, w, h, r) {
-    r = Math.min(r, w / 2, h / 2);
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
+    return { perfect: '#00FFC8', great: '#4ECDC4', good: '#FFD93D', miss: '#FF6B6B' }[result] || '#fff';
   }
 }

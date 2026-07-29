@@ -18,7 +18,7 @@
   <section id="page-library" class="page active">
     <div class="library-header">
       <h1 class="library-title">🎵 Lychnis</h1>
-      <p class="library-subtitle">用你喜欢的歌，玩节奏游戏</p>
+      <p class="library-subtitle">听歌 · 记忆节奏 · 模仿打击</p>
     </div>
     <div class="song-list" id="song-list"></div>
   </section>
@@ -90,15 +90,15 @@
       </div>
     </div>
 
-    <canvas id="game-canvas"></canvas>
+    <div id="game-stage"></div>
 
     <div class="game-tap-area" id="game-tap-area"></div>
 
     <!-- 阶段切换遮罩 -->
     <div class="phase-overlay" id="phase-overlay">
-      <div class="phase-overlay-title" id="phase-overlay-title">演示引导</div>
-      <div class="phase-overlay-subtitle" id="phase-overlay-subtitle">先看一遍节奏，准备好后开始</div>
-      <button class="phase-overlay-btn" id="phase-overlay-btn">开始演示</button>
+      <div class="phase-overlay-title" id="phase-overlay-title">开始游戏</div>
+      <div class="phase-overlay-subtitle" id="phase-overlay-subtitle">先观察教程段的节奏，然后在打击段模仿点击</div>
+      <button class="phase-overlay-btn" id="phase-overlay-btn">开始</button>
     </div>
 
     <!-- 帮助弹窗 -->
@@ -109,19 +109,19 @@
         <h3>玩法说明</h3>
         <div class="help-step">
           <div class="help-step-num">1</div>
-          <div class="help-step-text">音符从右侧飞向左侧判定线，请观察它们的飞行轨迹。</div>
+          <div class="help-step-text">歌曲连续播放不停顿，谱面分为三种段落交替出现。</div>
         </div>
         <div class="help-step">
           <div class="help-step-num">2</div>
-          <div class="help-step-text">当音符到达判定线（发光圆圈）的瞬间，点击屏幕进行判定。</div>
+          <div class="help-step-text">👁 <b>教程段</b>：荧光扫描线从左到右扫过长条，经过音符点会自动点亮。请仔细观察并记忆节奏。</div>
         </div>
         <div class="help-step">
           <div class="help-step-num">3</div>
-          <div class="help-step-text">判定越精准得分越高：Perfect > Great > Good > Miss。连击不中断有额外加分。</div>
+          <div class="help-step-text">👆 <b>打击段</b>：相同的节奏型再次出现，这次需要你自己在扫描线经过音符点时点击屏幕。</div>
         </div>
         <div class="help-step">
           <div class="help-step-num">4</div>
-          <div class="help-step-text">流程：先看一遍演示引导，熟悉节奏后再自己操作。</div>
+          <div class="help-step-text">判定越精准得分越高：Perfect > Great > Good > Miss。连击不中断有额外加分。</div>
         </div>
         <button class="help-modal-close" id="help-modal-close">知道了</button>
       </div>

@@ -1,124 +1,268 @@
 /**
- * 歌曲数据 & 谱面定义
+ * 歌曲数据 & 谱面定义（段落式）
  *
- * 谱面(chart)格式 —— 每个音符对象包含：
- *   { time: 毫秒, type: 'tap' }
- *   time: 相对于歌曲播放开始的毫秒数
- *   type: 目前仅支持 'tap'（点击音符）
+ * 谱面格式：每首歌包含一个 segments 数组，音乐连续播放不停顿。
+ * 段落分三种类型：
+ *   tutorial  教程段 — 扫描线自动点亮音符，玩家观察记忆
+ *   play      打击段 — 玩家需在音符位置点击屏幕，模仿前一教程段
+ *   idle      空闲段 — 只放歌不操作
  *
- * ========== 如何添加你的歌曲 ==========
- * 1. 将音频文件（mp3/ogg）放入 assets/audio/ 目录
- * 2. 将封面图片放入 assets/covers/ 目录（可选，没有则用渐变色）
- * 3. 复制下面的歌曲对象，修改 id / title / artist / audio / bpm / color
- * 4. 编写谱面：可用 genChart() 辅助生成，也可手动逐条定义
- *
- * 手动谱面示例：
- *   chart: [
- *     { time: 3000, type: 'tap' },
- *     { time: 3500, type: 'tap' },
- *     { time: 4000, type: 'tap' },
- *     ...
- *   ]
+ * 每个段落对象：
+ *   { type: 'tutorial', start: 0, end: 4000, notes: [1000, 1500, 3500] }
+ *   start/end — 段落起止时间（毫秒，歌曲绝对时间）
+ *   notes     — 音符时间点数组（毫秒，歌曲绝对时间）
  */
-
-/**
- * 根据BPM和节奏型自动生成谱面
- * @param {number} bpm           每分钟节拍数
- * @param {number[][]} patterns  每小节的拍位模式，按小节循环
- *                               [0,2] 表示在1拍和3拍放音符
- *                               [0,0.5,2] 表示1拍、1.5拍(八分音符)、3拍
- * @param {number} measures      总小节数
- * @param {number} startOffset   第一个音符前的空白（毫秒）
- */
-function genChart(bpm, patterns, measures = 16, startOffset = 3000) {
-  const beatMs = 60000 / bpm; // 一拍的毫秒数
-  const notes = [];
-  for (let m = 0; m < measures; m++) {
-    const pattern = patterns[m % patterns.length];
-    for (const beat of pattern) {
-      notes.push({
-        time: Math.round(startOffset + (m * 4 + beat) * beatMs),
-        type: 'tap'
-      });
-    }
-  }
-  return notes;
-}
 
 const SONGS = [
   {
-    id: 'lovestory',
-    title: 'Love Story',
-    artist: 'Demo Singer',
-    cover: null,                 // null = 使用渐变色作为封面
-    audio: 'assets/audio/lovestory.mp3',
+    id: 'harehareya',
+    title: 'ハレハレヤ',
+    artist: '（翻唱。原作：羽生迷子）',
+    cover: 'assets/covers/harehareya.jpg',
+    audio: 'assets/audio/harehareya.mp3',
     bpm: 120,
-    duration: 35,
+    duration: 208,
     difficulty: '简单',
     color: ['#FF6B6B', '#FF8E8E'],
-    // ✅ 手动谱面示例：第 3 / 3.5 / 4 / 4.5 / 5 秒各一个音符
-    chart: [
-      { time: 3000, type: 'tap' },   // 第 3.0 秒
-      { time: 3500, type: 'tap' },   // 第 3.5 秒
-      { time: 4000, type: 'tap' },   // 第 4.0 秒
-      { time: 4500, type: 'tap' },   // 第 4.5 秒
-      { time: 5000, type: 'tap' },   // 第 5.0 秒
+    segments: [
+      { type: 'tutorial', start: 0,      end: 4000,   notes: [1000, 1500, 3500] },
+      { type: 'play',     start: 4000,   end: 8000,   notes: [5000, 5500, 7500] },
+      { type: 'idle',     start: 8000,   end: 12000,  notes: [] },
+      { type: 'tutorial', start: 12000,  end: 16000,  notes: [13000, 13500, 15500] },
+      { type: 'play',     start: 16000,  end: 20000,  notes: [17000, 17500, 19500] },
+      { type: 'idle',     start: 20000,  end: 24000,  notes: [] },
+      { type: 'tutorial', start: 24000,  end: 28000,  notes: [25000, 25500, 27500] },
+      { type: 'play',     start: 28000,  end: 32000,  notes: [29000, 29500, 31500] },
+      { type: 'idle',     start: 32000,  end: 36000,  notes: [] },
+      { type: 'tutorial', start: 36000,  end: 40000,  notes: [37000, 37500, 39500] },
+      { type: 'play',     start: 40000,  end: 44000,  notes: [41000, 41500, 43500] },
+      { type: 'idle',     start: 44000,  end: 48000,  notes: [] },
+      { type: 'tutorial', start: 48000,  end: 52000,  notes: [49000, 49500, 51500] },
+      { type: 'play',     start: 52000,  end: 56000,  notes: [53000, 53500, 55500] },
+      { type: 'idle',     start: 56000,  end: 60000,  notes: [] },
+      { type: 'tutorial', start: 60000,  end: 64000,  notes: [61000, 61500, 63500] },
+      { type: 'play',     start: 64000,  end: 68000,  notes: [65000, 65500, 67500] },
+      { type: 'idle',     start: 68000,  end: 72000,  notes: [] },
+      { type: 'tutorial', start: 72000,  end: 76000,  notes: [73000, 73500, 75500] },
+      { type: 'play',     start: 76000,  end: 80000,  notes: [77000, 77500, 79500] },
+      { type: 'idle',     start: 80000,  end: 84000,  notes: [] },
+      { type: 'tutorial', start: 84000,  end: 88000,  notes: [85000, 85500, 87500] },
+      { type: 'play',     start: 88000,  end: 92000,  notes: [89000, 89500, 91500] },
+      { type: 'idle',     start: 92000,  end: 96000,  notes: [] },
+      { type: 'tutorial', start: 96000,  end: 100000, notes: [97000, 97500, 99500] },
+      { type: 'play',     start: 100000, end: 104000, notes: [101000, 101500, 103500] },
+      { type: 'idle',     start: 104000, end: 108000, notes: [] },
+      { type: 'tutorial', start: 108000, end: 112000, notes: [109000, 109500, 111500] },
+      { type: 'play',     start: 112000, end: 116000, notes: [113000, 113500, 115500] },
+      { type: 'idle',     start: 116000, end: 120000, notes: [] },
+      { type: 'tutorial', start: 120000, end: 124000, notes: [121000, 121500, 123500] },
+      { type: 'play',     start: 124000, end: 128000, notes: [125000, 125500, 127500] },
+      { type: 'idle',     start: 128000, end: 132000, notes: [] },
+      { type: 'tutorial', start: 132000, end: 136000, notes: [133000, 133500, 135500] },
+      { type: 'play',     start: 136000, end: 140000, notes: [137000, 137500, 139500] },
+      { type: 'idle',     start: 140000, end: 144000, notes: [] },
+      { type: 'tutorial', start: 144000, end: 148000, notes: [145000, 145500, 147500] },
+      { type: 'play',     start: 148000, end: 152000, notes: [149000, 149500, 151500] },
+      { type: 'idle',     start: 152000, end: 156000, notes: [] },
+      { type: 'tutorial', start: 156000, end: 160000, notes: [157000, 157500, 159500] },
+      { type: 'play',     start: 160000, end: 164000, notes: [161000, 161500, 163500] },
+      { type: 'idle',     start: 164000, end: 168000, notes: [] },
+      { type: 'tutorial', start: 168000, end: 172000, notes: [169000, 169500, 171500] },
+      { type: 'play',     start: 172000, end: 176000, notes: [173000, 173500, 175500] },
+      { type: 'idle',     start: 176000, end: 180000, notes: [] },
+      { type: 'tutorial', start: 180000, end: 184000, notes: [181000, 181500, 183500] },
+      { type: 'play',     start: 184000, end: 188000, notes: [185000, 185500, 187500] },
+      { type: 'idle',     start: 188000, end: 192000, notes: [] },
+      { type: 'tutorial', start: 192000, end: 196000, notes: [193000, 193500, 195500] },
+      { type: 'play',     start: 196000, end: 200000, notes: [197000, 197500, 199500] },
+      { type: 'idle',     start: 200000, end: 204000, notes: [] },
+      { type: 'tutorial', start: 204000, end: 208000, notes: [205000, 205500, 207500] }
     ]
   },
   {
-    id: 'midnight',
-    title: 'Midnight Run',
-    artist: 'Demo Artist',
-    cover: null,
-    audio: 'assets/audio/midnight.mp3',
+    id: 'snowjam',
+    title: 'Snow Jam',
+    artist: '（翻唱。原作：Rin音）',
+    cover: 'assets/covers/snowjam.jpg',
+    audio: 'assets/audio/snowjam.mp3',
     bpm: 128,
-    duration: 35,
+    duration: 191,
     difficulty: '中等',
     color: ['#4ECDC4', '#44A5A0'],
-    chart: genChart(128, [
-      [0, 1, 2, 3],
-      [0, 1, 2, 3],
-      [0, 0.5, 2, 2.5],
-      [0, 1, 2, 3],
-    ], 12, 3000)
+    segments: [
+      { type: 'tutorial', start: 0,      end: 4000,   notes: [1000, 1500, 3500] },
+      { type: 'play',     start: 4000,   end: 8000,   notes: [5000, 5500, 7500] },
+      { type: 'idle',     start: 8000,   end: 12000,  notes: [] },
+      { type: 'tutorial', start: 12000,  end: 16000,  notes: [13000, 13500, 15500] },
+      { type: 'play',     start: 16000,  end: 20000,  notes: [17000, 17500, 19500] },
+      { type: 'idle',     start: 20000,  end: 24000,  notes: [] },
+      { type: 'tutorial', start: 24000,  end: 28000,  notes: [25000, 25500, 27500] },
+      { type: 'play',     start: 28000,  end: 32000,  notes: [29000, 29500, 31500] },
+      { type: 'idle',     start: 32000,  end: 36000,  notes: [] },
+      { type: 'tutorial', start: 36000,  end: 40000,  notes: [37000, 37500, 39500] },
+      { type: 'play',     start: 40000,  end: 44000,  notes: [41000, 41500, 43500] },
+      { type: 'idle',     start: 44000,  end: 48000,  notes: [] },
+      { type: 'tutorial', start: 48000,  end: 52000,  notes: [49000, 49500, 51500] },
+      { type: 'play',     start: 52000,  end: 56000,  notes: [53000, 53500, 55500] },
+      { type: 'idle',     start: 56000,  end: 60000,  notes: [] },
+      { type: 'tutorial', start: 60000,  end: 64000,  notes: [61000, 61500, 63500] },
+      { type: 'play',     start: 64000,  end: 68000,  notes: [65000, 65500, 67500] },
+      { type: 'idle',     start: 68000,  end: 72000,  notes: [] },
+      { type: 'tutorial', start: 72000,  end: 76000,  notes: [73000, 73500, 75500] },
+      { type: 'play',     start: 76000,  end: 80000,  notes: [77000, 77500, 79500] },
+      { type: 'idle',     start: 80000,  end: 84000,  notes: [] },
+      { type: 'tutorial', start: 84000,  end: 88000,  notes: [85000, 85500, 87500] },
+      { type: 'play',     start: 88000,  end: 92000,  notes: [89000, 89500, 91500] },
+      { type: 'idle',     start: 92000,  end: 96000,  notes: [] },
+      { type: 'tutorial', start: 96000,  end: 100000, notes: [97000, 97500, 99500] },
+      { type: 'play',     start: 100000, end: 104000, notes: [101000, 101500, 103500] },
+      { type: 'idle',     start: 104000, end: 108000, notes: [] },
+      { type: 'tutorial', start: 108000, end: 112000, notes: [109000, 109500, 111500] },
+      { type: 'play',     start: 112000, end: 116000, notes: [113000, 113500, 115500] },
+      { type: 'idle',     start: 116000, end: 120000, notes: [] },
+      { type: 'tutorial', start: 120000, end: 124000, notes: [121000, 121500, 123500] },
+      { type: 'play',     start: 124000, end: 128000, notes: [125000, 125500, 127500] },
+      { type: 'idle',     start: 128000, end: 132000, notes: [] },
+      { type: 'tutorial', start: 132000, end: 136000, notes: [133000, 133500, 135500] },
+      { type: 'play',     start: 136000, end: 140000, notes: [137000, 137500, 139500] },
+      { type: 'idle',     start: 140000, end: 144000, notes: [] },
+      { type: 'tutorial', start: 144000, end: 148000, notes: [145000, 145500, 147500] },
+      { type: 'play',     start: 148000, end: 152000, notes: [149000, 149500, 151500] },
+      { type: 'idle',     start: 152000, end: 156000, notes: [] },
+      { type: 'tutorial', start: 156000, end: 160000, notes: [157000, 157500, 159500] },
+      { type: 'play',     start: 160000, end: 164000, notes: [161000, 161500, 163500] },
+      { type: 'idle',     start: 164000, end: 168000, notes: [] },
+      { type: 'tutorial', start: 168000, end: 172000, notes: [169000, 169500, 171500] },
+      { type: 'play',     start: 172000, end: 176000, notes: [173000, 173500, 175500] },
+      { type: 'idle',     start: 176000, end: 180000, notes: [] },
+      { type: 'tutorial', start: 180000, end: 184000, notes: [181000, 181500, 183500] },
+      { type: 'play',     start: 184000, end: 188000, notes: [185000, 185500, 187500] },
+      { type: 'idle',     start: 188000, end: 191000, notes: [] }
+    ]
   },
   {
-    id: 'sakura',
-    title: 'Sakura Dance',
-    artist: 'Demo Musician',
-    cover: null,
-    audio: 'assets/audio/sakura.mp3',
+    id: 'subobjective',
+    title: 'sub/objective',
+    artist: '（翻唱。原作：たなか）',
+    cover: 'assets/covers/subobjective.png',
+    audio: 'assets/audio/subobjective.mp3',
     bpm: 140,
-    duration: 35,
+    duration: 179,
     difficulty: '困难',
     color: ['#FFB6C1', '#FF69B4'],
-    chart: genChart(140, [
-      [0, 0.5, 1, 2, 2.5, 3],
-      [0, 1, 1.5, 2, 3, 3.5],
-      [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5],
-      [0, 1, 2, 2.5, 3],
-    ], 12, 3000)
+    segments: [
+      { type: 'tutorial', start: 0,      end: 4000,   notes: [1000, 1500, 3500] },
+      { type: 'play',     start: 4000,   end: 8000,   notes: [5000, 5500, 7500] },
+      { type: 'idle',     start: 8000,   end: 12000,  notes: [] },
+      { type: 'tutorial', start: 12000,  end: 16000,  notes: [13000, 13500, 15500] },
+      { type: 'play',     start: 16000,  end: 20000,  notes: [17000, 17500, 19500] },
+      { type: 'idle',     start: 20000,  end: 24000,  notes: [] },
+      { type: 'tutorial', start: 24000,  end: 28000,  notes: [25000, 25500, 27500] },
+      { type: 'play',     start: 28000,  end: 32000,  notes: [29000, 29500, 31500] },
+      { type: 'idle',     start: 32000,  end: 36000,  notes: [] },
+      { type: 'tutorial', start: 36000,  end: 40000,  notes: [37000, 37500, 39500] },
+      { type: 'play',     start: 40000,  end: 44000,  notes: [41000, 41500, 43500] },
+      { type: 'idle',     start: 44000,  end: 48000,  notes: [] },
+      { type: 'tutorial', start: 48000,  end: 52000,  notes: [49000, 49500, 51500] },
+      { type: 'play',     start: 52000,  end: 56000,  notes: [53000, 53500, 55500] },
+      { type: 'idle',     start: 56000,  end: 60000,  notes: [] },
+      { type: 'tutorial', start: 60000,  end: 64000,  notes: [61000, 61500, 63500] },
+      { type: 'play',     start: 64000,  end: 68000,  notes: [65000, 65500, 67500] },
+      { type: 'idle',     start: 68000,  end: 72000,  notes: [] },
+      { type: 'tutorial', start: 72000,  end: 76000,  notes: [73000, 73500, 75500] },
+      { type: 'play',     start: 76000,  end: 80000,  notes: [77000, 77500, 79500] },
+      { type: 'idle',     start: 80000,  end: 84000,  notes: [] },
+      { type: 'tutorial', start: 84000,  end: 88000,  notes: [85000, 85500, 87500] },
+      { type: 'play',     start: 88000,  end: 92000,  notes: [89000, 89500, 91500] },
+      { type: 'idle',     start: 92000,  end: 96000,  notes: [] },
+      { type: 'tutorial', start: 96000,  end: 100000, notes: [97000, 97500, 99500] },
+      { type: 'play',     start: 100000, end: 104000, notes: [101000, 101500, 103500] },
+      { type: 'idle',     start: 104000, end: 108000, notes: [] },
+      { type: 'tutorial', start: 108000, end: 112000, notes: [109000, 109500, 111500] },
+      { type: 'play',     start: 112000, end: 116000, notes: [113000, 113500, 115500] },
+      { type: 'idle',     start: 116000, end: 120000, notes: [] },
+      { type: 'tutorial', start: 120000, end: 124000, notes: [121000, 121500, 123500] },
+      { type: 'play',     start: 124000, end: 128000, notes: [125000, 125500, 127500] },
+      { type: 'idle',     start: 128000, end: 132000, notes: [] },
+      { type: 'tutorial', start: 132000, end: 136000, notes: [133000, 133500, 135500] },
+      { type: 'play',     start: 136000, end: 140000, notes: [137000, 137500, 139500] },
+      { type: 'idle',     start: 140000, end: 144000, notes: [] },
+      { type: 'tutorial', start: 144000, end: 148000, notes: [145000, 145500, 147500] },
+      { type: 'play',     start: 148000, end: 152000, notes: [149000, 149500, 151500] },
+      { type: 'idle',     start: 152000, end: 156000, notes: [] },
+      { type: 'tutorial', start: 156000, end: 160000, notes: [157000, 157500, 159500] },
+      { type: 'play',     start: 160000, end: 164000, notes: [161000, 161500, 163500] },
+      { type: 'idle',     start: 164000, end: 168000, notes: [] },
+      { type: 'tutorial', start: 168000, end: 172000, notes: [169000, 169500, 171500] },
+      { type: 'play',     start: 172000, end: 176000, notes: [173000, 173500, 175500] },
+      { type: 'idle',     start: 176000, end: 179000, notes: [] }
+    ]
   },
   {
-    id: 'electric',
-    title: 'Electric Dreams',
-    artist: 'Demo Producer',
-    cover: null,
-    audio: 'assets/audio/electric.mp3',
+    id: 'yuureitokyo',
+    title: '幽霊東京',
+    artist: '（翻唱。原作：Ayase·初音ミク）',
+    cover: 'assets/covers/yuureitokyo.png',
+    audio: 'assets/audio/yuureitokyo.mp3',
     bpm: 150,
-    duration: 35,
+    duration: 200,
     difficulty: '专家',
     color: ['#9B59B6', '#8E44AD'],
-    chart: genChart(150, [
-      [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5],
-      [0, 0.5, 1, 2, 2.5, 3, 3.5],
-      [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5],
-      [0, 1, 1.5, 2, 2.5, 3, 3.5],
-    ], 12, 3000)
+    segments: [
+      { type: 'tutorial', start: 0,      end: 4000,   notes: [1000, 1500, 3500] },
+      { type: 'play',     start: 4000,   end: 8000,   notes: [5000, 5500, 7500] },
+      { type: 'idle',     start: 8000,   end: 12000,  notes: [] },
+      { type: 'tutorial', start: 12000,  end: 16000,  notes: [13000, 13500, 15500] },
+      { type: 'play',     start: 16000,  end: 20000,  notes: [17000, 17500, 19500] },
+      { type: 'idle',     start: 20000,  end: 24000,  notes: [] },
+      { type: 'tutorial', start: 24000,  end: 28000,  notes: [25000, 25500, 27500] },
+      { type: 'play',     start: 28000,  end: 32000,  notes: [29000, 29500, 31500] },
+      { type: 'idle',     start: 32000,  end: 36000,  notes: [] },
+      { type: 'tutorial', start: 36000,  end: 40000,  notes: [37000, 37500, 39500] },
+      { type: 'play',     start: 40000,  end: 44000,  notes: [41000, 41500, 43500] },
+      { type: 'idle',     start: 44000,  end: 48000,  notes: [] },
+      { type: 'tutorial', start: 48000,  end: 52000,  notes: [49000, 49500, 51500] },
+      { type: 'play',     start: 52000,  end: 56000,  notes: [53000, 53500, 55500] },
+      { type: 'idle',     start: 56000,  end: 60000,  notes: [] },
+      { type: 'tutorial', start: 60000,  end: 64000,  notes: [61000, 61500, 63500] },
+      { type: 'play',     start: 64000,  end: 68000,  notes: [65000, 65500, 67500] },
+      { type: 'idle',     start: 68000,  end: 72000,  notes: [] },
+      { type: 'tutorial', start: 72000,  end: 76000,  notes: [73000, 73500, 75500] },
+      { type: 'play',     start: 76000,  end: 80000,  notes: [77000, 77500, 79500] },
+      { type: 'idle',     start: 80000,  end: 84000,  notes: [] },
+      { type: 'tutorial', start: 84000,  end: 88000,  notes: [85000, 85500, 87500] },
+      { type: 'play',     start: 88000,  end: 92000,  notes: [89000, 89500, 91500] },
+      { type: 'idle',     start: 92000,  end: 96000,  notes: [] },
+      { type: 'tutorial', start: 96000,  end: 100000, notes: [97000, 97500, 99500] },
+      { type: 'play',     start: 100000, end: 104000, notes: [101000, 101500, 103500] },
+      { type: 'idle',     start: 104000, end: 108000, notes: [] },
+      { type: 'tutorial', start: 108000, end: 112000, notes: [109000, 109500, 111500] },
+      { type: 'play',     start: 112000, end: 116000, notes: [113000, 113500, 115500] },
+      { type: 'idle',     start: 116000, end: 120000, notes: [] },
+      { type: 'tutorial', start: 120000, end: 124000, notes: [121000, 121500, 123500] },
+      { type: 'play',     start: 124000, end: 128000, notes: [125000, 125500, 127500] },
+      { type: 'idle',     start: 128000, end: 132000, notes: [] },
+      { type: 'tutorial', start: 132000, end: 136000, notes: [133000, 133500, 135500] },
+      { type: 'play',     start: 136000, end: 140000, notes: [137000, 137500, 139500] },
+      { type: 'idle',     start: 140000, end: 144000, notes: [] },
+      { type: 'tutorial', start: 144000, end: 148000, notes: [145000, 145500, 147500] },
+      { type: 'play',     start: 148000, end: 152000, notes: [149000, 149500, 151500] },
+      { type: 'idle',     start: 152000, end: 156000, notes: [] },
+      { type: 'tutorial', start: 156000, end: 160000, notes: [157000, 157500, 159500] },
+      { type: 'play',     start: 160000, end: 164000, notes: [161000, 161500, 163500] },
+      { type: 'idle',     start: 164000, end: 168000, notes: [] },
+      { type: 'tutorial', start: 168000, end: 172000, notes: [169000, 169500, 171500] },
+      { type: 'play',     start: 172000, end: 176000, notes: [173000, 173500, 175500] },
+      { type: 'idle',     start: 176000, end: 180000, notes: [] },
+      { type: 'tutorial', start: 180000, end: 184000, notes: [181000, 181500, 183500] },
+      { type: 'play',     start: 184000, end: 188000, notes: [185000, 185500, 187500] },
+      { type: 'idle',     start: 188000, end: 192000, notes: [] },
+      { type: 'tutorial', start: 192000, end: 196000, notes: [193000, 193500, 195500] },
+      { type: 'play',     start: 196000, end: 200000, notes: [197000, 197500, 199500] }
+    ]
   }
 ];
 
-/** 根据 id 获取歌曲 */
 function getSongById(id) {
   return SONGS.find(s => s.id === id);
 }

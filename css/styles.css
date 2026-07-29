@@ -435,12 +435,145 @@ html, body {
   font-variant-numeric: tabular-nums;
 }
 
+/* 游戏舞台容器 */
 #game-canvas {
+  display: none; /* 保留占位但不再使用 */
+}
+
+#game-stage {
+  position: absolute;
+  top: calc(var(--safe-top) + 120px);
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+}
+
+/* 段落标签 */
+.game-seg-label {
+  position: absolute;
+  top: 8%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  transition: opacity 0.3s ease;
+  white-space: nowrap;
+}
+.game-seg-label.label-tutorial { color: var(--accent); }
+.game-seg-label.label-play { color: #FFD93D; }
+.game-seg-label.label-idle { color: var(--text-muted); }
+
+/* 长条轨道 */
+.game-track {
+  position: absolute;
+  top: 50%;
+  left: 28px;
+  right: 28px;
+  height: 56px;
+  margin-top: -28px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 28px;
+  overflow: hidden;
+}
+
+/* 进度填充 */
+.track-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, rgba(0,255,200,0.05), rgba(0,255,200,0.20));
+  border-radius: 28px 0 0 28px;
+  transition: none;
+}
+
+/* 音符容器 */
+.track-notes {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  touch-action: none;
+}
+
+/* 单个音符圆点 */
+.note {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin-top: -7px;
+  margin-left: -7px;
+  background: rgba(255,255,255,0.3);
+  border: 1.5px solid rgba(255,255,255,0.4);
+  border-radius: 50%;
+  transition: all 0.15s ease;
+}
+
+.note.hit {
+  background: #00FFC8;
+  border-color: #fff;
+  box-shadow: 0 0 12px #00FFC8, 0 0 24px rgba(0,255,200,0.5);
+  transform: scale(1.8);
+}
+
+.note.hit.perfect { background: #00FFC8; box-shadow: 0 0 16px #00FFC8; }
+.note.hit.great   { background: #4ECDC4; box-shadow: 0 0 16px #4ECDC4; }
+.note.hit.good    { background: #FFD93D; box-shadow: 0 0 16px #FFD93D; }
+.note.hit.miss    { background: #FF6B6B; box-shadow: 0 0 8px #FF6B6B; }
+
+/* 扫描线 */
+.track-scanline {
+  position: absolute;
+  top: -20px;
+  bottom: -20px;
+  width: 3px;
+  margin-left: -1.5px;
+  left: 0%;
+  background: #00FFC8;
+  border-radius: 2px;
+  box-shadow: 0 0 8px #00FFC8, 0 0 16px rgba(0,255,200,0.6);
+}
+
+/* 扫描线顶部底部圆点 */
+.track-scanline::before,
+.track-scanline::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  background: #00FFC8;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #00FFC8;
+}
+.track-scanline::before { top: -4px; }
+.track-scanline::after { bottom: -4px; }
+
+/* 判定文字层 */
+.game-judge-layer {
+  position: absolute;
+  top: 50%;
+  left: 28px;
+  right: 28px;
+  height: 0;
+  pointer-events: none;
+}
+
+.judge-text {
+  position: absolute;
+  top: -32px;
+  font-size: 13px;
+  font-weight: 800;
+  transform: translateX(-50%);
+  animation: judgeFloat 0.8s ease-out forwards;
+}
+
+@keyframes judgeFloat {
+  0% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-24px); }
 }
 
 .game-tap-area {
@@ -457,9 +590,7 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.75);
   z-index: 30;
   opacity: 0;
   pointer-events: none;
