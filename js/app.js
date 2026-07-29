@@ -599,10 +599,8 @@
     $('#btn-close-preview').addEventListener('click', () => {
       $('#share-image-preview').classList.remove('show');
     });
-      $('#btn-download-image').addEventListener('click', downloadShareImage);
-  }
+    $('#btn-download-image').addEventListener('click', downloadShareImage);
 
-<<<<<<< HEAD
     // 排行榜弹窗
     $('#lb-entry-btn').addEventListener('click', () => showLeaderboard());
     $('#btn-view-rank').addEventListener('click', () => showLeaderboard(state.currentSong ? state.currentSong.id : null));
@@ -615,13 +613,10 @@
         renderLeaderboardList(state.lbCurrentSongId || (SONGS[0] && SONGS[0].id));
       }
     });
+  }
 
-    window.addEventListener('resize', () => {
-=======
   // ============================================
   // 横竖屏适配：用 JS 主动管理旋转提示显隐
-  // （避免部分手机只靠 CSS orientation 媒体查询
-  //  不同步导致横屏后遮罩仍挡住、看起来「没反应」）
   // ============================================
   const portraitMq = window.matchMedia('(orientation: portrait)');
 
@@ -630,40 +625,16 @@
     if (!hint) return;
     const isNarrow = window.innerWidth <= 920;
     const dismissed = sessionStorage.getItem('rotate-hint-dismissed') === '1';
-    // 仅「竖屏 + 窄屏 + 未忽略」才提示；其余情况一律收起
     const shouldShow = portraitMq.matches && isNarrow && !dismissed;
     hint.classList.toggle('is-visible', !!shouldShow);
   }
 
   function handleViewportChange() {
-    // orientationchange 瞬间 innerWidth 可能还未更新，延时一帧再判定
     requestAnimationFrame(() => {
       updateOrientation();
->>>>>>> a4aaa66795f6fbedcdbe5c343aa7242e37e0cd51
       if (state.game) state.game._resize();
     });
   }
-
-  window.addEventListener('resize', handleViewportChange);
-  window.addEventListener('orientationchange', () => {
-    setTimeout(handleViewportChange, 300);
-  });
-  if (portraitMq.addEventListener) {
-    portraitMq.addEventListener('change', handleViewportChange);
-  } else if (portraitMq.addListener) {
-    portraitMq.addListener(handleViewportChange);
-  }
-
-  // 竖屏旋转提示：用户可点击「继续进入」忽略提示（本次会话内不再弹）
-  $('#rotate-hint-btn').addEventListener('click', () => {
-    const hint = document.getElementById('rotate-hint');
-    if (hint) {
-      hint.classList.remove('is-visible');
-      sessionStorage.setItem('rotate-hint-dismissed', '1');
-    }
-  });
-  // 页面载入即根据当前方向刷新一次
-  updateOrientation();
 
   // ============================================
   // 初始化
@@ -671,6 +642,27 @@
   function init() {
     initLibrary();
     bindEvents();
+
+    // 横竖屏事件监听
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(handleViewportChange, 300);
+    });
+    if (portraitMq.addEventListener) {
+      portraitMq.addEventListener('change', handleViewportChange);
+    } else if (portraitMq.addListener) {
+      portraitMq.addListener(handleViewportChange);
+    }
+
+    // 竖屏旋转提示按钮
+    $('#rotate-hint-btn').addEventListener('click', () => {
+      const hint = document.getElementById('rotate-hint');
+      if (hint) {
+        hint.classList.remove('is-visible');
+        sessionStorage.setItem('rotate-hint-dismissed', '1');
+      }
+    });
+
     updateOrientation();
   }
 
