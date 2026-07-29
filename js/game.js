@@ -413,16 +413,20 @@ class RhythmGame {
       return;
     }
 
-    // 段落标签
-    const labels = {
-      tutorial: { text: '记住节奏！', cls: 'label-tutorial' },
-      play: { text: '轮到你打！', cls: 'label-play' },
-      idle: { text: '休息一下～', cls: 'label-idle' }
-    };
-    const info = labels[seg.type];
-    if (info) {
-      this.labelEl.textContent = info.text;
-      this.labelEl.className = 'game-seg-label ' + info.cls;
+    // 段落标签（tutorial / play 用顶部标签；idle 用中央 message）
+    if (seg.type !== 'idle') {
+      const labels = {
+        tutorial: { text: '记住节奏！', cls: 'label-tutorial' },
+        play: { text: '轮到你打！', cls: 'label-play' }
+      };
+      const info = labels[seg.type];
+      if (info) {
+        this.labelEl.textContent = info.text;
+        this.labelEl.className = 'game-seg-label ' + info.cls;
+      }
+    } else {
+      // idle 段不清顶部标签，让它自然淡出；中央 message 在下方单独处理
+      this.labelEl.className = 'game-seg-label label-hidden';
     }
 
     // 底板颜色渐变
@@ -449,16 +453,26 @@ class RhythmGame {
     const visibleSegs = this._findVisibleScanSegs(t);
     this._positionScanlines(visibleSegs);
 
+    // idle 段：清掉长条上的点、隐藏扫描线，并在中央显示自定义 message
+    if (seg.type === 'idle') {
+      this.scanlines.forEach(sl => sl.style.display = 'none');
+      const msg = seg.message != null ? seg.message : '休息一下～';
+      this._showPraise(msg, 0); // 0 = 常驻不自动消失（idle 期间一直显示）
+    }
+
     // 第一个 tutorial 段结束前 0.6 秒弹出「到你！」
     if (seg._index === this._firstTutorialIndex && !this._turnShown && t >= seg.end - 600) {
       this._turnShown = true;
       this._showPraise('到你！', 1600);
     }
 
-    // 段落切换：仅进入新的 tutorial 段时清空点（让大白点留存到 play 段打完）
+    // 段落切换：进入任意新段都清空长条上的点（让教程白点/打击亮点不留到 idle）
     if (seg._index !== this._lastSegIndex) {
-      if (seg.type === 'tutorial') {
-        this._clearDots();
+      this._clearDots();
+      // 进入非 idle 段时，清除 idle 的中央 message
+      if (seg.type !== 'idle' && this.praiseEl.classList.contains('show')) {
+        this.praiseEl.classList.remove('show');
+        this.praiseEl.textContent = '';
       }
       // 从第一个 play 段切走时显示「好！」
       if (this._lastSegIndex === this._firstPlayIndex && !this._firstPlayEnded) {
