@@ -41,11 +41,6 @@
     return `${m}:${s.toString().padStart(2, '0')}`;
   }
 
-  function getDifficultyClass(diff) {
-    const map = { '简单': 'diff-easy', '中等': 'diff-medium', '困难': 'diff-hard', '专家': 'diff-expert' };
-    return map[diff] || '';
-  }
-
   function setCoverBackground(el, song) {
     if (song.cover) {
       el.innerHTML = `<img src="${song.cover}" alt="cover">`;
@@ -139,30 +134,85 @@
   }
 
   // ============================================
-  // 页面1: 曲库
+  // 页面1: 曲库 (lychnis-redesign 风格卡片)
   // ============================================
+  // 中文难度 → 英文 key（与 Tab 的 data-difficulty 对齐）
+  const DIFF_KEY = { '简单': 'easy', '中等': 'medium', '困难': 'hard', '专家': 'expert' };
+  // 封面渐变 class（与 redesign 一致，按歌曲 id 映射）
+  const COVER_CLASS = {
+    harehareya:   'cover-harehare',
+    snowjam:      'cover-snowjam',
+    subobjective: 'cover-subjective',
+    yuureitokyo:  'cover-yurei',
+  };
+
   function initLibrary() {
     const list = $('#song-list');
     list.innerHTML = '';
-    SONGS.forEach(song => {
+    SONGS.forEach((song, index) => {
       const card = document.createElement('div');
-      card.className = 'song-card';
+      card.className = 'song-item';
+      card.setAttribute('data-difficulty', DIFF_KEY[song.difficulty] || 'all');
+      card.tabIndex = 0;
+      const coverCls = COVER_CLASS[song.id] || 'cover-harehare';
+      const num = String(index + 1).padStart(2, '0');
       card.innerHTML = `
-        <div class="song-cover"></div>
+        <div class="song-cover ${coverCls}" aria-hidden="true">
+          <div class="cover-overlay"></div>
+          <span class="cover-num">${num}</span>
+        </div>
         <div class="song-info">
-          <div class="song-title">${song.title}</div>
-          <div class="song-artist">${song.artist}</div>
-          <div class="song-meta">
-            <span class="song-badge">BPM ${song.bpm}</span>
-            <span class="song-badge ${getDifficultyClass(song.difficulty)}">${song.difficulty}</span>
-            <span class="song-badge">${song.duration}s</span>
+          <h3 class="song-title">${song.title}</h3>
+          <p class="song-artist">${song.artist}</p>
+          <div class="song-tags">
+            <span class="tag tag-bpm">BPM ${song.bpm}</span>
+            <span class="tag tag-${DIFF_KEY[song.difficulty] || 'easy'}">${song.difficulty}</span>
+            <span class="tag tag-time">${song.duration}s</span>
           </div>
         </div>
+        <button class="play-btn" aria-label="播放 ${song.title}">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="M8 5.5v13a1 1 0 001.5.87l11-6.5a1 1 0 000-1.74l-11-6.5A1 1 0 008 5.5z" fill="currentColor"/>
+          </svg>
+        </button>
       `;
-      const coverEl = card.querySelector('.song-cover');
-      setCoverBackground(coverEl, song);
+      // 整张卡片点击 → 进播放页（与原来行为一致）
       card.addEventListener('click', () => openPlayer(song));
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayer(song); }
+      });
+      // 播放小按钮：阻止冒泡后同样进播放页
+      const playBtn = card.querySelector('.play-btn');
+      playBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openPlayer(song);
+      });
       list.appendChild(card);
+    });
+  }
+
+  // Tab 难度筛选
+  function initLibraryTabs() {
+    const tabBar = document.querySelector('.tab-bar');
+    if (!tabBar) return;
+    tabBar.addEventListener('click', (e) => {
+      const tab = e.target.closest('.tab-item');
+      if (!tab) return;
+      tabBar.querySelectorAll('.tab-item').forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
+      const diff = tab.getAttribute('data-difficulty');
+      document.querySelectorAll('#song-list .song-item').forEach(item => {
+        const d = item.getAttribute('data-difficulty');
+        if (diff === 'all' || d === diff) {
+          item.classList.remove('filtered-out');
+        } else {
+          item.classList.add('filtered-out');
+        }
+      });
     });
   }
 
@@ -279,7 +329,7 @@
   function showStartOverlay() {
     const overlay = $('#phase-overlay');
     $('#phase-overlay-title').textContent = '准备好了吗？';
-    $('#phase-overlay-subtitle').textContent = '先记住节奏，再照着节奏轻打屏幕吧！';
+    $('#phase-overlay-subtitle').textContent = '先记住节奏，再照着节奏轻打屏幕任意位置吧！';
     $('#phase-overlay-btn').textContent = '开启Q弹';
     $('#phase-overlay-btn').onclick = () => {
       overlay.classList.remove('show');
@@ -633,6 +683,7 @@
   // ============================================
   function init() {
     initLibrary();
+    initLibraryTabs();
     bindEvents();
 
     // 横竖屏事件监听
