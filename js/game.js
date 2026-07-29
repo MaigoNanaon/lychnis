@@ -112,13 +112,13 @@ class RhythmGame {
     if (this.container) this.container.innerHTML = '';
   }
 
-<<<<<<< HEAD
   /** 窗口/方向变化时调用（竖屏⇄横屏）。
    *  游戏完全使用百分比定位，无需重算布局，只做容错占位，
    *  避免外部 resize 监听调用到不存在的方法而报错。 */
   _resize() {
     // 百分比布局自动适配，无需手动重绘
-=======
+  }
+
   /** 中止游戏：停止音频和渲染，不触发 onEnd/onPhaseChange，不保存成绩 */
   abort() {
     this.phase = 'aborted';
@@ -127,7 +127,6 @@ class RhythmGame {
     this.audio.onTimeUpdate = null;
     if (this.container) this.container.innerHTML = '';
     if (this.callbacks.onAbort) this.callbacks.onAbort();
->>>>>>> mytask
   }
 
   // ============================================
