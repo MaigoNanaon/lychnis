@@ -487,24 +487,53 @@
       $('#share-image-preview').classList.remove('show');
     });
       $('#btn-download-image').addEventListener('click', downloadShareImage);
-  window.addEventListener('resize', () => {
-    if (state.game) state.game._resize();
+  }
+
+  // ============================================
+  // 横竖屏适配：用 JS 主动管理旋转提示显隐
+  // （避免部分手机只靠 CSS orientation 媒体查询
+  //  不同步导致横屏后遮罩仍挡住、看起来「没反应」）
+  // ============================================
+  const portraitMq = window.matchMedia('(orientation: portrait)');
+
+  function updateOrientation() {
+    const hint = document.getElementById('rotate-hint');
+    if (!hint) return;
+    const isNarrow = window.innerWidth <= 920;
+    const dismissed = sessionStorage.getItem('rotate-hint-dismissed') === '1';
+    // 仅「竖屏 + 窄屏 + 未忽略」才提示；其余情况一律收起
+    const shouldShow = portraitMq.matches && isNarrow && !dismissed;
+    hint.classList.toggle('is-visible', !!shouldShow);
+  }
+
+  function handleViewportChange() {
+    // orientationchange 瞬间 innerWidth 可能还未更新，延时一帧再判定
+    requestAnimationFrame(() => {
+      updateOrientation();
+      if (state.game) state.game._resize();
+    });
+  }
+
+  window.addEventListener('resize', handleViewportChange);
+  window.addEventListener('orientationchange', () => {
+    setTimeout(handleViewportChange, 300);
   });
+  if (portraitMq.addEventListener) {
+    portraitMq.addEventListener('change', handleViewportChange);
+  } else if (portraitMq.addListener) {
+    portraitMq.addListener(handleViewportChange);
+  }
 
   // 竖屏旋转提示：用户可点击「继续进入」忽略提示（本次会话内不再弹）
   $('#rotate-hint-btn').addEventListener('click', () => {
     const hint = document.getElementById('rotate-hint');
     if (hint) {
-      hint.style.display = 'none';
+      hint.classList.remove('is-visible');
       sessionStorage.setItem('rotate-hint-dismissed', '1');
     }
   });
-  // 若本次会话已忽略过，直接进入时不再显示
-  if (sessionStorage.getItem('rotate-hint-dismissed') === '1') {
-    const hint = document.getElementById('rotate-hint');
-    if (hint) hint.style.display = 'none';
-  }
-  }
+  // 页面载入即根据当前方向刷新一次
+  updateOrientation();
 
   // ============================================
   // 初始化
@@ -512,6 +541,7 @@
   function init() {
     initLibrary();
     bindEvents();
+    updateOrientation();
   }
 
   if (document.readyState === 'loading') {

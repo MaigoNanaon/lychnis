@@ -1137,66 +1137,63 @@ body::before {
   }
 }
 
-/* ============================================
-   竖屏旋转提示
+/* 竖屏旋转提示
    --------------------------------------------
-   - 仅在「竖屏且屏幕较窄（典型手机）」时显示
-   - 横屏或桌面宽屏时隐藏，正常游玩
-   ============================================ */
+   显隐由 JS 控制 .is-visible（更可靠，避免部分机型
+   CSS orientation 媒体查询不同步导致横屏仍挡住）
+   默认隐藏；JS 判定「竖屏 + 窄屏」时加上 .is-visible */
 .rotate-hint {
   display: none;
 }
 
-@media (orientation: portrait) and (max-width: 920px) {
-  .rotate-hint {
-    position: fixed;
-    inset: 0;
-    z-index: 999;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    text-align: center;
-    background:
-      radial-gradient(ellipse at 50% 30%, rgba(56,189,248,0.18), transparent 60%),
-      linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 70%);
-    pointer-events: auto;
-  }
-  .rotate-hint-icon {
-    font-size: 64px;
-    animation: rotateShake 2s ease-in-out infinite;
-  }
-  .rotate-hint-title {
-    font-size: 22px;
-    font-weight: 800;
-    font-family: 'Baloo 2','ZCOOL KuaiLe','Noto Sans SC', sans-serif;
-    color: var(--accent);
-  }
-  .rotate-hint-sub {
-    font-size: 14px;
-    color: var(--text-secondary);
-    padding: 0 40px;
-    line-height: 1.6;
-  }
-  .rotate-hint-btn {
-    margin-top: 8px;
-    padding: 14px 40px;
-    background: linear-gradient(135deg, var(--accent), var(--accent-2));
-    color: var(--bg-primary);
-    border: none;
-    border-radius: 30px;
-    font-size: 16px;
-    font-weight: 800;
-    letter-spacing: 1px;
-    cursor: pointer;
-    box-shadow: 0 8px 32px rgba(94, 234, 212, 0.35);
-    transition: all 0.2s ease;
-  }
-  .rotate-hint-btn:active {
-    transform: scale(0.95);
-    box-shadow: 0 4px 16px rgba(94, 234, 212, 0.3);
-  }
+.rotate-hint.is-visible {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(56,189,248,0.18), transparent 60%),
+    linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 70%);
+  pointer-events: auto;
+}
+.rotate-hint.is-visible .rotate-hint-icon {
+  font-size: 64px;
+  animation: rotateShake 2s ease-in-out infinite;
+}
+.rotate-hint.is-visible .rotate-hint-title {
+  font-size: 22px;
+  font-weight: 800;
+  font-family: 'Baloo 2','ZCOOL KuaiLe','Noto Sans SC', sans-serif;
+  color: var(--accent);
+}
+.rotate-hint.is-visible .rotate-hint-sub {
+  font-size: 14px;
+  color: var(--text-secondary);
+  padding: 0 40px;
+  line-height: 1.6;
+}
+.rotate-hint.is-visible .rotate-hint-btn {
+  margin-top: 8px;
+  padding: 14px 40px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: var(--bg-primary);
+  border: none;
+  border-radius: 30px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 0 8px 32px rgba(94, 234, 212, 0.35);
+  transition: all 0.2s ease;
+}
+.rotate-hint.is-visible .rotate-hint-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 4px 16px rgba(94, 234, 212, 0.3);
 }
 
 @keyframes rotateShake {
