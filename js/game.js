@@ -79,6 +79,20 @@ class RhythmGame {
     this.praiseEl.className = 'game-praise';
     this.container.appendChild(this.praiseEl);
 
+    // 结束庆祝文字：整首歌完成后升起的彩色大「Qute！」
+    this.finishEl = document.createElement('div');
+    this.finishEl.className = 'game-finish-qute';
+    this.finishEl.textContent = 'Qute！';
+    this.finishEl.style.display = 'none';
+    this.container.appendChild(this.finishEl);
+
+    // 内联小号「Qute！」（出现在最后一次 Q 的上方）
+    this.quteInlineEl = document.createElement('div');
+    this.quteInlineEl.className = 'game-qute-inline';
+    this.quteInlineEl.textContent = 'Qute！';
+    this.quteInlineEl.style.display = 'none';
+    this.container.appendChild(this.quteInlineEl);
+
     // 歌曲进度条
     this.progressEl = document.createElement('div');
     this.progressEl.className = 'game-progress-bar';
@@ -197,6 +211,14 @@ class RhythmGame {
     this.judgeCount++;
 
     this._addJudgeText(note.time, seg, this._judgeText(result), this._resultColor(result), this._judgeSize(result));
+
+    // 若该 note 是此 play 段的最后一个，且整段全部打成了 Perfect：
+    // 在最后一次 Q 的正上方升起小号彩色「Qute！」，并在下方放烟花
+    const st = this.segmentStates[seg._index];
+    const lastNote = st && st.notes[st.notes.length - 1];
+    if (result === 'perfect' && note === lastNote && this._isAllPerfect(seg._index)) {
+      this._rewardAllPerfectInline(note, seg);
+    }
 
     if (this.callbacks.onJudge) {
       this.callbacks.onJudge({ result, combo: this.combo, score: this.score });
@@ -319,6 +341,73 @@ class RhythmGame {
     setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 700);
   }
 
+  // 烟花特效：从指定位置向四周迸发一圈彩色粒子
+  _spawnFireworks(ratio) {
+    const colors = ['#5EEAD4', '#38BDF8', '#A78BFA', '#F472B6', '#FBBF77', '#FB7185'];
+    const cx = (ratio * 100);
+    const count = 14;
+    for (let k = 0; k < count; k++) {
+      const p = document.createElement('div');
+      p.className = 'fw-particle';
+      const color = colors[k % colors.length];
+      p.style.background = color;
+      p.style.boxShadow = '0 0 8px ' + color;
+      p.style.left = cx + '%';
+      p.style.top = '50%';
+      // 随机角度 + 距离
+      const ang = (Math.PI * 2 * k) / count + (Math.random() - 0.5) * 0.4;
+      const dist = 60 + Math.random() * 70;
+      const dx = Math.cos(ang) * dist;
+      const dy = Math.sin(ang) * dist;
+      p.style.setProperty('--dx', dx.toFixed(1) + 'px');
+      p.style.setProperty('--dy', dy.toFixed(1) + 'px');
+      p.style.animationDelay = (Math.random() * 120).toFixed(0) + 'ms';
+      this.container.appendChild(p);
+      setTimeout(() => { if (p.parentNode) p.parentNode.removeChild(p); }, 1100);
+    }
+  }
+
+  // 检测某一段是否所有音符都是 Perfect（全 Q）
+  _isAllPerfect(index) {
+    const st = this.segmentStates[index];
+    if (!st || !st.notes || st.notes.length === 0) return false;
+    return st.notes.every(n => n.judged && n.judgeResult === 'perfect');
+  }
+
+  // 全 Q 奖励（整句结束时的整段大号版本，保留以备后用）
+  _rewardAllPerfect() {
+    this.finishEl.style.display = 'block';
+    this.finishEl.classList.remove('show');
+    void this.finishEl.offsetWidth;
+    this.finishEl.classList.add('show');
+    this._spawnFireworks(0.5);
+    clearTimeout(this._quteTimer);
+    this._quteTimer = setTimeout(() => {
+      this.finishEl.classList.remove('show');
+      this.finishEl.style.display = 'none';
+    }, 2000);
+  }
+
+  // 全 Q 奖励（内联小号版）：与最后一次 Q 同时，出现在它上方，下方放烟花
+  _rewardAllPerfectInline(note, seg) {
+    // 定位到该 note 在轨道上的横向位置、轨道上方
+    const ratio = (note.time - seg.start) / (seg.end - seg.start);
+    const el = this.quteInlineEl;
+    el.style.left = (ratio * 100) + '%';
+    el.style.top = 'calc(50% - 92px)';
+    el.style.display = 'block';
+    el.classList.remove('show');
+    void el.offsetWidth;
+    el.classList.add('show');
+    // 烟花从轨道中心（稍偏该 note 位置）向下方迸发
+    this._spawnFireworks(ratio);
+    clearTimeout(this._quteInlineTimer);
+    this._quteInlineTimer = setTimeout(() => {
+      el.classList.remove('show');
+      el.style.display = 'none';
+    }, 1600);
+  }
+
   /** 段落切换：清空当前轨道上的所有点 */
   _clearDots() {
     if (this.notesLayer) this.notesLayer.innerHTML = '';
@@ -426,20 +515,33 @@ class RhythmGame {
     const ratio = Math.max(0, Math.min(1, (t - seg.start) / segDur));
     const segColors = {
       tutorial: [94, 234, 212, 0.15],
-      play:     [251, 191, 119, 0.15],
+      play:     [255, 255, 255, 0.88],
       idle:     [255, 255, 255, 0.03]
     };
     const base = [255, 255, 255, 0.05];
     const tgt = segColors[seg.type] || segColors.idle;
-    const cr = Math.round(base[0] + (tgt[0] - base[0]) * ratio);
-    const cg = Math.round(base[1] + (tgt[1] - base[1]) * ratio);
-    const cb = Math.round(base[2] + (tgt[2] - base[2]) * ratio);
-    const ca = (base[3] + (tgt[3] - base[3]) * ratio).toFixed(3);
+    let cr, cg, cb, ca;
+    if (seg.type === 'play') {
+      // play 段（轮到你打！）：内部透明不填色，只保留外层辉光激亮
+      cr = 255; cg = 255; cb = 255; ca = 0;
+    } else {
+      cr = Math.round(base[0] + (tgt[0] - base[0]) * ratio);
+      cg = Math.round(base[1] + (tgt[1] - base[1]) * ratio);
+      cb = Math.round(base[2] + (tgt[2] - base[2]) * ratio);
+      ca = (base[3] + (tgt[3] - base[3]) * ratio).toFixed(3);
+    }
     const bgColor = `rgba(${cr},${cg},${cb},${ca})`;
     const bdA = (0.25 * ratio).toFixed(3);
     const bdColor = `rgba(${tgt[0]},${tgt[1]},${tgt[2]},${bdA})`;
     this.track.style.background = bgColor;
     this.track.style.borderColor = bdColor;
+    // play 段（轮到你打！）：整条 bar 激亮发光、底色变白
+    if (seg.type === 'play') {
+      this.track.style.boxShadow = '0 0 28px rgba(255,255,255,0.9), 0 0 60px rgba(255,255,255,0.55)';
+      this.track.style.borderColor = 'rgba(255,255,255,0.95)';
+    } else {
+      this.track.style.boxShadow = 'none';
+    }
 
     // 扫描线
     const visibleSegs = this._findVisibleScanSegs(t);
@@ -467,7 +569,7 @@ class RhythmGame {
       // 从第一个 play 段切走时显示「好！」
       if (this._lastSegIndex === this._firstPlayIndex && !this._firstPlayEnded) {
         this._firstPlayEnded = true;
-        this._showPraise('好！');
+        this._showPraise('Qute🫰！');
       }
       this._lastSegIndex = seg._index;
     }

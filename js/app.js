@@ -1,5 +1,5 @@
 /**
- * Lychnis 主应用逻辑（段落式游戏）
+ * Q-beat! 主应用逻辑（段落式游戏）
  */
 
 (function () {
@@ -138,13 +138,6 @@
   // ============================================
   // 中文难度 → 英文 key（与 Tab 的 data-difficulty 对齐）
   const DIFF_KEY = { '简单': 'easy', '中等': 'medium', '困难': 'hard', '专家': 'expert' };
-  // 封面渐变 class（与 redesign 一致，按歌曲 id 映射）
-  const COVER_CLASS = {
-    harehareya:   'cover-harehare',
-    snowjam:      'cover-snowjam',
-    subobjective: 'cover-subjective',
-    yuureitokyo:  'cover-yurei',
-  };
 
   function initLibrary() {
     const list = $('#song-list');
@@ -154,10 +147,10 @@
       card.className = 'song-item';
       card.setAttribute('data-difficulty', DIFF_KEY[song.difficulty] || 'all');
       card.tabIndex = 0;
-      const coverCls = COVER_CLASS[song.id] || 'cover-harehare';
       const num = String(index + 1).padStart(2, '0');
       card.innerHTML = `
-        <div class="song-cover ${coverCls}" aria-hidden="true">
+        <div class="song-cover" aria-hidden="true">
+          <img class="song-cover-img" src="${song.cover}" alt="">
           <div class="cover-overlay"></div>
           <span class="cover-num">${num}</span>
         </div>
@@ -236,6 +229,7 @@
     state.audio.load(song.audio).catch(() => {
       showToast('音频文件缺失，请先添加歌曲文件');
     });
+    updatePlayBtn();
   }
 
   function startPlayerTimer() {
@@ -272,12 +266,33 @@
     stopPlayerTimer();
   }
 
+  // 播放/暂停合并到同一个按钮：根据当前是否在播放来切换
+  function togglePlay() {
+    if (!state.currentSong) return;
+    if (state.audio.audioEl.paused) {
+      playPlayer();
+    } else {
+      pausePlayer();
+    }
+    updatePlayBtn();
+  }
+
+  // 同步播放按钮图标与状态（playing 显示暂停图标 ⏸，否则显示播放 ▶）
+  function updatePlayBtn() {
+    const btn = $('#btn-play');
+    if (!btn) return;
+    const playing = !state.audio.audioEl.paused;
+    btn.textContent = playing ? '⏸' : '▶';
+    btn.title = playing ? '暂停' : '播放';
+  }
+
   function stopPlayer() {
     state.audio.stop();
     $('#cover-disc').classList.remove('spinning');
     stopPlayerTimer();
     $('#progress-filled').style.width = '0%';
     $('#time-current').textContent = '0:00';
+    updatePlayBtn();
   }
 
   // ============================================
@@ -310,8 +325,7 @@
           },
           onPhaseChange: (phase) => {
             if (phase === 'ended') {
-              $('#game-abort-btn').style.display = 'none';
-              setTimeout(() => openShare(game), 800);
+                      setTimeout(() => openShare(game), 1900);
             }
           },
           onEnd: (result) => {
@@ -329,18 +343,16 @@
   function showStartOverlay() {
     const overlay = $('#phase-overlay');
     $('#phase-overlay-title').textContent = '准备好了吗？';
-    $('#phase-overlay-subtitle').textContent = '先记住节奏，再照着节奏轻打屏幕任意位置吧！';
-    $('#phase-overlay-btn').textContent = '开启Q弹';
+    $('#phase-overlay-subtitle').textContent = '先记住节奏，再照着节奏，轻打屏幕任意位置吧！';
+    $('#phase-overlay-btn').textContent = 'Q！';
     $('#phase-overlay-btn').onclick = () => {
       overlay.classList.remove('show');
       state.game.start();
-      $('#game-abort-btn').style.display = 'block';
     };
     overlay.classList.add('show');
   }
 
   function exitGame() {
-    $('#game-abort-btn').style.display = 'none';
     if (state.game) {
       state.game.destroy();
       state.game = null;
@@ -445,7 +457,7 @@
       ctx.fillStyle = '#A78BFA';
   ctx.font = 'bold 36px -apple-system, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Lychnis 节奏挑战', W / 2, 100);
+  ctx.fillText('Q-beat! 节奏挑战', W / 2, 100);
 
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
     ctx.font = '24px -apple-system, sans-serif';
@@ -494,7 +506,7 @@
 
       ctx.fillStyle = 'rgba(94,234,212,0.6)';
   ctx.font = 'bold 28px -apple-system, sans-serif';
-  ctx.fillText('Lychnis', W / 2, H - 120);
+  ctx.fillText('Q-beat!', W / 2, H - 120);
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
     ctx.font = '20px -apple-system, sans-serif';
     ctx.fillText('用你喜欢的歌，玩节奏游戏', W / 2, H - 80);
@@ -509,7 +521,7 @@
     if (!img.src) return;
     const a = document.createElement('a');
     a.href = img.src;
-    a.download = `lychnis-score-${Date.now()}.png`;
+    a.download = `q-beat-score-${Date.now()}.png`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -584,8 +596,7 @@
       stopPlayer();
       showPage('library');
     });
-    $('#btn-play').addEventListener('click', playPlayer);
-    $('#btn-pause').addEventListener('click', pausePlayer);
+    $('#btn-play').addEventListener('click', togglePlay);
     $('#btn-stop').addEventListener('click', stopPlayer);
     $('#game-entry-btn').addEventListener('click', openGame);
 
@@ -602,13 +613,17 @@
 
     // 游戏页
     $('#game-back-btn').addEventListener('click', exitGame);
-      $('#game-abort-btn').addEventListener('pointerdown', (e) => {
+  // 游戏页停止按钮（与播放页同形状的圆形 ⏹）：游戏中→中止结算，未开始→直接退出
+  $('#game-stop-btn').addEventListener('pointerdown', (e) => {
     e.stopPropagation();
   });
-  $('#game-abort-btn').addEventListener('click', (e) => {
+  $('#game-stop-btn').addEventListener('click', (e) => {
     e.stopPropagation();
-    if (!state.game || state.game.phase !== 'playing') return;
-    state.game.abort();
+    if (state.game && state.game.phase === 'playing') {
+      state.game.abort();
+    } else {
+      exitGame();
+    }
   });
     $('#game-help-btn').addEventListener('click', () => {
       $('#help-modal').classList.add('show');
