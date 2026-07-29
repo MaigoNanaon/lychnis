@@ -1127,11 +1127,247 @@ body::before {
   .library-title { font-size: 24px; }
 }
 
-@media (min-width: 500px) {
+/* 竖屏时：手机上保持居中窄条（桌面预览也好看） */
+@media (min-width: 500px) and (orientation: portrait) {
   #app {
     max-width: 480px;
     margin: 0 auto;
     border-left: 1px solid rgba(255,255,255,0.05);
     border-right: 1px solid rgba(255,255,255,0.05);
+  }
+}
+
+/* ============================================
+   竖屏旋转提示
+   --------------------------------------------
+   - 仅在「竖屏且屏幕较窄（典型手机）」时显示
+   - 横屏或桌面宽屏时隐藏，正常游玩
+   ============================================ */
+.rotate-hint {
+  display: none;
+}
+
+@media (orientation: portrait) and (max-width: 920px) {
+  .rotate-hint {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    text-align: center;
+    background:
+      radial-gradient(ellipse at 50% 30%, rgba(56,189,248,0.18), transparent 60%),
+      linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 70%);
+    pointer-events: auto;
+  }
+  .rotate-hint-icon {
+    font-size: 64px;
+    animation: rotateShake 2s ease-in-out infinite;
+  }
+  .rotate-hint-title {
+    font-size: 22px;
+    font-weight: 800;
+    font-family: 'Baloo 2','ZCOOL KuaiLe','Noto Sans SC', sans-serif;
+    color: var(--accent);
+  }
+  .rotate-hint-sub {
+    font-size: 14px;
+    color: var(--text-secondary);
+    padding: 0 40px;
+    line-height: 1.6;
+  }
+}
+
+@keyframes rotateShake {
+  0%, 40%   { transform: rotate(0deg); }
+  50%, 90%  { transform: rotate(90deg); }
+  100%      { transform: rotate(0deg); }
+}
+
+/* ============================================
+   横屏布局（landscape）
+   ============================================ */
+@media (orientation: landscape) {
+  /* 让 #app 在横屏下铺满整个宽屏，去掉竖屏的居中窄条限制 */
+  #app {
+    max-width: none;
+    margin: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  /* ------------------- 游戏页（核心调整） ------------------- */
+  #page-game {
+    /* 横向铺满，纵向高度较小，整体居中 */
+    align-items: center;
+    justify-content: center;
+  }
+
+  .game-topbar {
+    padding: var(--safe-top) 16px 0;
+    padding-top: max(var(--safe-top), 8px);
+  }
+
+  /* 信息栏：横屏高度紧张，放到顶部一条，间距更紧凑 */
+  .game-info-bar {
+    top: max(var(--safe-top), 6px);
+    padding: 6px 16px 0;
+    gap: clamp(16px, 6vw, 80px);
+  }
+  .info-value {
+    font-size: 22px;
+  }
+  .info-label {
+    font-size: 9px;
+  }
+
+  /* 游戏舞台：横屏时占满中部可用区域 */
+  #game-stage {
+    top: calc(max(var(--safe-top), 6px) + 44px);
+    bottom: calc(var(--safe-bottom) + 24px);
+    left: 0;
+    right: 0;
+  }
+
+  /* 横屏轨道：更扁、更长，置于舞台中部 */
+  .game-track {
+    left: 6vw;
+    right: 6vw;
+    top: 50%;
+    height: clamp(36px, 7vh, 56px);
+    margin-top: calc(clamp(36px, 7vh, 56px) / -2);
+    border-radius: 999px;
+  }
+
+  /* 段落标签：横屏放到靠上，避免遮挡轨道 */
+  .game-seg-label {
+    top: 4%;
+    font-size: 13px;
+    padding: 5px 14px;
+  }
+
+  /* 音符点：横屏下轨道更扁，点略缩小以适配高度 */
+  .dot.tutorial-dot {
+    width: 14px;
+    height: 14px;
+    margin-top: -7px;
+    margin-left: -7px;
+  }
+  .dot.player-dot {
+    width: 7px;
+    height: 7px;
+    margin-top: -3.5px;
+    margin-left: -3.5px;
+  }
+
+  /* 扫描线：横屏上下延伸更长，更醒目 */
+  .track-scanline {
+    top: -22px;
+    bottom: -22px;
+  }
+
+  /* 判定文字 */
+  .game-judge-layer {
+    left: 6vw;
+    right: 6vw;
+  }
+  .judge-text {
+    font-size: 16px;
+  }
+
+  /* 弹出提示「到你！/好！」：横屏居中即可 */
+  .game-praise {
+    top: 42%;
+    font-size: 44px;
+  }
+
+  /* 进度条：横屏底部一条，左右留白与轨道对齐 */
+  .game-progress {
+    bottom: calc(var(--safe-bottom) + 10px);
+    left: 6vw;
+    right: 6vw;
+  }
+
+  /* 阶段切换遮罩 / 帮助弹窗：横屏下内容居中、限制最大宽度 */
+  .phase-overlay-subtitle {
+    max-width: 560px;
+  }
+  .help-modal-content {
+    max-width: 560px;
+    margin: 0 auto;
+    border-radius: 24px;
+  }
+  .help-modal {
+    align-items: center;
+  }
+
+  /* ------------------- 曲库页 ------------------- */
+  #page-library {
+    display: block;
+  }
+  .library-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 20px 12px;
+  }
+  .song-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+    padding: 12px 20px calc(var(--safe-bottom) + 24px);
+  }
+
+  /* ------------------- 播放页 ------------------- */
+  #page-player {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 5vw;
+    padding: var(--safe-top) 4vw var(--safe-bottom);
+  }
+  .player-topbar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+  }
+  .player-body {
+    flex: 1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 4vw;
+  }
+  .cover-wrap {
+    width: clamp(120px, 22vh, 200px);
+    height: clamp(120px, 22vh, 200px);
+    flex-shrink: 0;
+  }
+  .progress-section {
+    width: min(320px, 40vw);
+  }
+  .player-controls {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* ------------------- 分享页 ------------------- */
+  #page-share {
+    justify-content: center;
+  }
+  .share-content {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 32px;
+    padding: calc(var(--safe-top) + 16px) 24px 24px;
+  }
+  .share-actions {
+    max-width: 280px;
   }
 }
