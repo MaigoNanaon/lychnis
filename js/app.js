@@ -260,11 +260,18 @@
           },
           onPhaseChange: (phase) => {
             if (phase === 'ended') {
+              $('#game-abort-btn').style.display = 'none';
               setTimeout(() => openShare(game), 800);
             }
           },
           onEnd: (result) => {
             state.gameResult = result;
+          },
+          onAbort: () => {
+            $('#game-abort-btn').style.display = 'none';
+            state.game = null;
+            showPage('player');
+            showToast('游戏已中止');
           }
         }
       );
@@ -283,11 +290,13 @@
     $('#phase-overlay-btn').onclick = () => {
       overlay.classList.remove('show');
       state.game.start();
+      $('#game-abort-btn').style.display = 'block';
     };
     overlay.classList.add('show');
   }
 
   function exitGame() {
+    $('#game-abort-btn').style.display = 'none';
     if (state.game) {
       state.game.destroy();
       state.game = null;
@@ -320,14 +329,49 @@
     };
     state.gameResult = r;
 
+    // 提交到本地排行榜
+    const grade = calcGrade(r.accuracy);
+    const rank = Leaderboard.submit({
+      songId: state.currentSong.id,
+      songTitle: state.currentSong.title,
+      score: r.score,
+      accuracy: r.accuracy,
+      maxCombo: r.maxCombo,
+      grade: grade,
+      perfect: r.perfect,
+      great: r.great,
+      good: r.good,
+      miss: r.miss,
+      total: r.total
+    });
+
+    state.lastRank = rank;
+    state.lastBest = Leaderboard.getBest(state.currentSong.id);
+
     showPage('share');
-    $('#share-grade').textContent = calcGrade(r.accuracy);
+    $('#share-grade').textContent = grade;
     $('#share-score-value').textContent = r.score.toLocaleString();
     $('#share-score-accuracy').textContent = `准确率 ${r.accuracy.toFixed(1)}%  ·  最高连击 ${r.maxCombo}`;
     $('#share-perfect').textContent = r.perfect;
     $('#share-great').textContent = r.great;
     $('#share-good').textContent = r.good;
     $('#share-miss').textContent = r.miss;
+
+    // 显示排名信息
+    const rankInfo = $('#share-rank-info');
+    const rankBadge = $('#share-rank-badge');
+    const rankText = $('#share-rank-text');
+    if (rank === 1) {
+      rankInfo.style.display = 'flex';
+      rankBadge.textContent = '#1';
+      rankText.textContent = '🎉 本曲最高分！';
+    } else if (rank && rank > 1) {
+      rankInfo.style.display = 'flex';
+      rankBadge.textContent = '#' + rank;
+      rankText.textContent = `本曲第 ${rank} 名 · 最高 ${state.lastBest ? state.lastBest.score.toLocaleString() : 0}`;
+    } else {
+      rankInfo.style.display = 'none';
+    }
   }
 
   function generateShareImage() {
@@ -429,6 +473,65 @@
   }
 
   // ============================================
+  // 排行榜弹窗
+  // ============================================
+  function showLeaderboard(songId) {
+    const targetId = songId || (SONGS[0] && SONGS[0].id);
+    state.lbCurrentSongId = targetId;
+
+    // 渲染歌曲标签
+    const tabsEl = $('#lb-song-tabs');
+    tabsEl.innerHTML = '';
+    SONGS.forEach(song => {
+      const tab = document.createElement('div');
+      tab.className = 'lb-song-tab' + (song.id === targetId ? ' active' : '');
+      tab.textContent = song.title;
+      tab.addEventListener('click', () => {
+        state.lbCurrentSongId = song.id;
+        tabsEl.querySelectorAll('.lb-song-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        renderLeaderboardList(song.id);
+      });
+      tabsEl.appendChild(tab);
+    });
+
+    renderLeaderboardList(targetId);
+    $('#lb-modal').classList.add('show');
+  }
+
+  function closeLeaderboard() {
+    $('#lb-modal').classList.remove('show');
+  }
+
+  function renderLeaderboardList(songId) {
+    const list = Leaderboard.getBySong(songId);
+    const listEl = $('#lb-list');
+
+    if (list.length === 0) {
+      listEl.innerHTML = '<div class="lb-empty">暂无记录，快去挑战吧！</div>';
+      return;
+    }
+
+    const rankClasses = ['gold', 'silver', 'bronze'];
+    listEl.innerHTML = '';
+    list.forEach((r, i) => {
+      const item = document.createElement('div');
+      item.className = 'lb-item';
+      const rankCls = i < 3 ? rankClasses[i] : '';
+      item.innerHTML = `
+        <div class="lb-item-rank ${rankCls}">${i + 1}</div>
+        <div class="lb-item-grade">${r.grade}</div>
+        <div class="lb-item-info">
+          <div class="lb-item-score">${r.score.toLocaleString()}</div>
+          <div class="lb-item-detail">${r.accuracy.toFixed(1)}% · 连击 ${r.maxCombo} · ${r.perfect}P ${r.great}G ${r.good}g ${r.miss}M</div>
+        </div>
+        <div class="lb-item-date">${r.date}</div>
+      `;
+      listEl.appendChild(item);
+    });
+  }
+
+  // ============================================
   // 事件绑定
   // ============================================
   function bindEvents() {
@@ -455,6 +558,16 @@
 
     // 游戏页
     $('#game-back-btn').addEventListener('click', exitGame);
+    $('#game-abort-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!state.game || state.game.phase !== 'playing') return;
+      if (confirm('确定要中止游戏吗？当前成绩将不会保存。')) {
+        state.game.abort();
+      }
+    });
+    $('#game-abort-btn').addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+    });
     $('#game-help-btn').addEventListener('click', () => {
       $('#help-modal').classList.add('show');
     });
@@ -486,13 +599,24 @@
     $('#btn-close-preview').addEventListener('click', () => {
       $('#share-image-preview').classList.remove('show');
     });
-      $('#btn-download-image').addEventListener('click', downloadShareImage);
+    $('#btn-download-image').addEventListener('click', downloadShareImage);
+
+    // 排行榜弹窗
+    $('#lb-entry-btn').addEventListener('click', () => showLeaderboard());
+    $('#btn-view-rank').addEventListener('click', () => showLeaderboard(state.currentSong ? state.currentSong.id : null));
+    $('#lb-modal-bg').addEventListener('click', closeLeaderboard);
+    $('#lb-modal-close').addEventListener('click', closeLeaderboard);
+    $('#lb-clear-btn').addEventListener('click', () => {
+      if (confirm('确定清空所有排行榜记录吗？')) {
+        Leaderboard.clear();
+        showToast('排行榜已清空');
+        renderLeaderboardList(state.lbCurrentSongId || (SONGS[0] && SONGS[0].id));
+      }
+    });
   }
 
   // ============================================
   // 横竖屏适配：用 JS 主动管理旋转提示显隐
-  // （避免部分手机只靠 CSS orientation 媒体查询
-  //  不同步导致横屏后遮罩仍挡住、看起来「没反应」）
   // ============================================
   const portraitMq = window.matchMedia('(orientation: portrait)');
 
@@ -501,39 +625,16 @@
     if (!hint) return;
     const isNarrow = window.innerWidth <= 920;
     const dismissed = sessionStorage.getItem('rotate-hint-dismissed') === '1';
-    // 仅「竖屏 + 窄屏 + 未忽略」才提示；其余情况一律收起
     const shouldShow = portraitMq.matches && isNarrow && !dismissed;
     hint.classList.toggle('is-visible', !!shouldShow);
   }
 
   function handleViewportChange() {
-    // orientationchange 瞬间 innerWidth 可能还未更新，延时一帧再判定
     requestAnimationFrame(() => {
       updateOrientation();
       if (state.game) state.game._resize();
     });
   }
-
-  window.addEventListener('resize', handleViewportChange);
-  window.addEventListener('orientationchange', () => {
-    setTimeout(handleViewportChange, 300);
-  });
-  if (portraitMq.addEventListener) {
-    portraitMq.addEventListener('change', handleViewportChange);
-  } else if (portraitMq.addListener) {
-    portraitMq.addListener(handleViewportChange);
-  }
-
-  // 竖屏旋转提示：用户可点击「继续进入」忽略提示（本次会话内不再弹）
-  $('#rotate-hint-btn').addEventListener('click', () => {
-    const hint = document.getElementById('rotate-hint');
-    if (hint) {
-      hint.classList.remove('is-visible');
-      sessionStorage.setItem('rotate-hint-dismissed', '1');
-    }
-  });
-  // 页面载入即根据当前方向刷新一次
-  updateOrientation();
 
   // ============================================
   // 初始化
@@ -541,6 +642,27 @@
   function init() {
     initLibrary();
     bindEvents();
+
+    // 横竖屏事件监听
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(handleViewportChange, 300);
+    });
+    if (portraitMq.addEventListener) {
+      portraitMq.addEventListener('change', handleViewportChange);
+    } else if (portraitMq.addListener) {
+      portraitMq.addListener(handleViewportChange);
+    }
+
+    // 竖屏旋转提示按钮
+    $('#rotate-hint-btn').addEventListener('click', () => {
+      const hint = document.getElementById('rotate-hint');
+      if (hint) {
+        hint.classList.remove('is-visible');
+        sessionStorage.setItem('rotate-hint-dismissed', '1');
+      }
+    });
+
     updateOrientation();
   }
 
