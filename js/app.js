@@ -246,7 +246,7 @@
       const stage = $('#game-stage');
       const game = new RhythmGame(
         stage,
-        state.currentSong.segments,
+        compileChart(state.currentSong),
         state.audio,
         state.currentSong.duration * 1000,
         {
