@@ -1179,6 +1179,24 @@ body::before {
     padding: 0 40px;
     line-height: 1.6;
   }
+  .rotate-hint-btn {
+    margin-top: 8px;
+    padding: 14px 40px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: var(--bg-primary);
+    border: none;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: 0 8px 32px rgba(94, 234, 212, 0.35);
+    transition: all 0.2s ease;
+  }
+  .rotate-hint-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 4px 16px rgba(94, 234, 212, 0.3);
+  }
 }
 
 @keyframes rotateShake {

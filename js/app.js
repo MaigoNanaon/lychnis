@@ -486,11 +486,24 @@
     $('#btn-close-preview').addEventListener('click', () => {
       $('#share-image-preview').classList.remove('show');
     });
-    $('#btn-download-image').addEventListener('click', downloadShareImage);
+      $('#btn-download-image').addEventListener('click', downloadShareImage);
+  window.addEventListener('resize', () => {
+    if (state.game) state.game._resize();
+  });
 
-    window.addEventListener('resize', () => {
-      if (state.game) state.game._resize();
-    });
+  // 竖屏旋转提示：用户可点击「继续进入」忽略提示（本次会话内不再弹）
+  $('#rotate-hint-btn').addEventListener('click', () => {
+    const hint = document.getElementById('rotate-hint');
+    if (hint) {
+      hint.style.display = 'none';
+      sessionStorage.setItem('rotate-hint-dismissed', '1');
+    }
+  });
+  // 若本次会话已忽略过，直接进入时不再显示
+  if (sessionStorage.getItem('rotate-hint-dismissed') === '1') {
+    const hint = document.getElementById('rotate-hint');
+    if (hint) hint.style.display = 'none';
+  }
   }
 
   // ============================================
