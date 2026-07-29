@@ -266,12 +266,6 @@
           },
           onEnd: (result) => {
             state.gameResult = result;
-          },
-          onAbort: () => {
-            $('#game-abort-btn').style.display = 'none';
-            state.game = null;
-            showPage('player');
-            showToast('游戏已中止');
           }
         }
       );
@@ -558,16 +552,14 @@
 
     // 游戏页
     $('#game-back-btn').addEventListener('click', exitGame);
-    $('#game-abort-btn').addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (!state.game || state.game.phase !== 'playing') return;
-      if (confirm('确定要中止游戏吗？当前成绩将不会保存。')) {
-        state.game.abort();
-      }
-    });
-    $('#game-abort-btn').addEventListener('pointerdown', (e) => {
-      e.stopPropagation();
-    });
+      $('#game-abort-btn').addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+  });
+  $('#game-abort-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!state.game || state.game.phase !== 'playing') return;
+    state.game.abort();
+  });
     $('#game-help-btn').addEventListener('click', () => {
       $('#help-modal').classList.add('show');
     });

@@ -119,14 +119,10 @@ class RhythmGame {
     // 百分比布局自动适配，无需手动重绘
   }
 
-  /** 中止游戏：停止音频和渲染，不触发 onEnd/onPhaseChange，不保存成绩 */
+  /** 中止游戏：中途停止但仍走正常结算逻辑（弹分享页/成绩） */
   abort() {
-    this.phase = 'aborted';
-    this._stopLoop();
-    this.audio.stop();
-    this.audio.onTimeUpdate = null;
-    if (this.container) this.container.innerHTML = '';
-    if (this.callbacks.onAbort) this.callbacks.onAbort();
+    if (this.phase === 'ended' || this.phase === 'aborted') return;
+    this._end();
   }
 
   // ============================================
@@ -330,19 +326,6 @@ class RhythmGame {
     this.playerDots = [];
   }
 
-  /** idle 段：在轨道中央显示自定义 message */
-  _showIdleMessage(text) {
-    if (!this.idleMessageEl) return;
-    this.idleMessageEl.textContent = text;
-    this.idleMessageEl.style.display = '';
-  }
-
-  /** 隐藏 idle message */
-  _hideIdleMessage() {
-    if (!this.idleMessageEl) return;
-    this.idleMessageEl.style.display = 'none';
-  }
-
   // ============================================
   // 渲染循环
   // ============================================
@@ -470,16 +453,16 @@ class RhythmGame {
 
     // 段落切换
     if (seg._index !== this._lastSegIndex) {
+      // 进入任何新段时先清空上一段的中央提示（praise 复用，统一管理）
+      this._hidePraise();
+      // 进入 tutorial 段：清空轨道点
       if (seg.type === 'tutorial') {
         this._clearDots();
-        this._hideIdleMessage();
       }
+      // 进入 idle 段：清空轨道点 + 在正中显示自定义 message
       if (seg.type === 'idle') {
         this._clearDots();
-        this._showIdleMessage(seg.message || '休息一下～');
-      }
-      if (seg.type !== 'idle') {
-        this._hideIdleMessage();
+        this._showPraise(seg.message || '休息一下～', 0);
       }
       // 从第一个 play 段切走时显示「好！」
       if (this._lastSegIndex === this._firstPlayIndex && !this._firstPlayEnded) {
@@ -516,11 +499,23 @@ class RhythmGame {
 
   _showPraise(text, duration) {
     this.praiseEl.textContent = text;
-    this.praiseEl.classList.remove('show');
+    this.praiseEl.classList.remove('show', 'persist');
     void this.praiseEl.offsetWidth; // 触发重绘以重新播放动画
-    if (duration) this.praiseEl.style.animationDuration = duration + 'ms';
-    else this.praiseEl.style.animationDuration = '';
-    this.praiseEl.classList.add('show');
+    if (duration) {
+      // 限时弹窗（到你！/好！）：走 praisePop 动画后淡出
+      this.praiseEl.style.animationDuration = duration + 'ms';
+      this.praiseEl.classList.add('show');
+    } else {
+      // 常驻显示（idle message 等）：不闪退，停在可见态
+      this.praiseEl.style.animationDuration = '';
+      this.praiseEl.classList.add('show', 'persist');
+    }
+  }
+
+  /** 隐藏中央提示（praise 复用） */
+  _hidePraise() {
+    this.praiseEl.classList.remove('show', 'persist');
+    this.praiseEl.textContent = '';
   }
 
   _updateJudgeTexts() {

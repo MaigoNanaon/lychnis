@@ -283,12 +283,10 @@ const SONGS = [
       { type: 'idle',     beatStart: 143.5,   beatEnd: 147.5},
       { type: 'tutorial', beatStart: 147.5,   beatEnd: 155.5,   notes: [148, 149, 150, 151, 152, 153, 154, 155]},
       { type: 'play',     beatStart: 155.5,   beatEnd: 163.5,   notes: [156, 157, 158, 159, 160, 161, 162, 163], playMode: 2 },
-      { type: 'tutorial', beatStart: 163.5,   beatEnd: 171.5,   notes: [164, 164.75, 165.5, 166, 167, 168, 170]},
-      { type: 'play',     beatStart: 171.5,   beatEnd: 179.5,   notes: [172, 172.75, 173.5, 174, 175, 176, 178], playMode: 2 },
+      { type: 'tutorial', beatStart: 163.5,   beatEnd: 171.5,   notes: [164, 164.75, 165.5, 166, 168, 170]},
+      { type: 'play',     beatStart: 171.5,   beatEnd: 179.5,   notes: [172, 172.75, 173.5, 174, 176, 178], playMode: 2 },
       { type: 'idle',     beatStart: 179.5,   beatEnd: 183.5,   },
-      { type: 'tutorial', beatStart: 183.5,   beatEnd: 191.5,   notes: [184, 185, 186, 186.75, 187.5, 189, 191]},
-      { type: 'play',     beatStart: 193.5,   beatEnd: 199.5,   notes: [192, 193, 194, 194.75, 195.5, 197, 199], playMode: 2 },
-    ]
+     ]
   }
 ];
 
