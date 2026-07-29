@@ -275,15 +275,19 @@ const SONGS = [
       { type: 'play',     beatStart: 115.5,   beatEnd: 119.5,   notes: [116, 116.75, 117.5, 118.5, 119], playMode: 2 },
       { type: 'tutorial', beatStart: 119.5,   beatEnd: 123.5,   notes: [121, 121.5, 123]},
       { type: 'play',     beatStart: 123.5,   beatEnd: 127.5,   notes: [125, 125.5, 127], playMode: 2 },
-      { type: 'idle', beatStart: 119.5,   beatEnd: 123.5,   notes: [121, 121.5, 123]},
-      { type: 'tutorial', beatStart: 119.5,   beatEnd: 123.5,   notes: [121, 121.5, 123]},
-      { type: 'play',     beatStart: 123.5,   beatEnd: 127.5,   notes: [125, 125.5, 127], playMode: 2 },
-      { type: 'idle',     beatStart: 127.5,   beatEnd: 131.5},
-      { type: 'tutorial', beatStart: 131.5,   beatEnd: 139.5,   notes: [132, 133, 134, 135, 136, 137, 138, 139]},
-      { type: 'play',     beatStart: 139.5,   beatEnd: 147.5,   notes: [140, 141, 142, 143, 144, 145, 146, 147], playMode: 2 },
-      { type: 'tutorial', beatStart: 147.5,   beatEnd: 155.5,   notes: [148, 149, 150, 151, 152, 153, 154, 155]},
-      { type: 'play',     beatStart: 155.5,   beatEnd: 163.5,   notes: [156, 157, 158, 159, 160, 161, 162, 163], playMode: 2 },
-      ]
+      { type: 'tutorial', beatStart: 127.5,   beatEnd: 131.5,   notes: [128, 128.75, 129.5, 130.5, 131]},
+      { type: 'play',     beatStart: 131.5,   beatEnd: 135.5,   notes: [132, 132.75, 133.5, 134.5, 135], playMode: 2 },
+      { type: 'tutorial', beatStart: 135.5,   beatEnd: 139.5,   notes: [136, 137, 138, 139]},
+      { type: 'play',     beatStart: 139.5,   beatEnd: 143.5,   notes: [140, 141, 142, 143], playMode: 2 },
+      { type: 'idle',     beatStart: 143.5,   beatEnd: 147.5},
+      { type: 'tutorial', beatStart: 147.5,   beatEnd: 155.5,   notes: [148, 148.75, 149.5, 150, 151, 152, 152.75, 153.5, 154, 155]},
+      { type: 'play',     beatStart: 155.5,   beatEnd: 163.5,   notes: [156, 156.75, 157.5, 158, 159, 160, 160.75, 161.5, 162, 163], playMode: 18 },
+      { type: 'tutorial', beatStart: 163.5,   beatEnd: 171.5,   notes: [164, 164.75, 165.5, 166, 167.5, 168, 169.5, 170.5, 171]},
+      { type: 'play',     beatStart: 171.5,   beatEnd: 179.5,   notes: [172, 172.75, 173.5, 174, 175.5, 176, 177.5, 178.5, 179], playMode: 18 },
+      { type: 'idle',     beatStart: 179.5,   beatEnd: 183.5,   notes: [164, 164.75, 165.5, 166, 167.5, 168, 169.5, 170.5, 171]},
+      { type: 'tutorial', beatStart: 183.5,   beatEnd: 191.5,   notes: [184, 185, 186, 186.75, 187.5, 189, 191]},
+      { type: 'play',     beatStart: 193.5,   beatEnd: 199.5,   notes: [192, 193, 194, 194.75, 195.5, 197, 199], playMode: 18 },
+    ]
   }
 ];
 
