@@ -440,6 +440,31 @@ body::before {
   z-index: 20;
 }
 
+.game-abort-btn {
+  position: absolute;
+  bottom: calc(var(--safe-bottom) + 56px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 28px;
+  background: rgba(251, 113, 133, 0.2);
+  color: var(--danger);
+  border: 1px solid rgba(251, 113, 133, 0.4);
+  border-radius: 22px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 60;
+  transition: all 0.15s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: auto;
+}
+
+.game-abort-btn:active {
+  transform: translateX(-50%) scale(0.94);
+  background: rgba(251, 113, 133, 0.35);
+}
+
 .game-info-bar {
   position: absolute;
   top: calc(var(--safe-top) + 60px);
@@ -1092,6 +1117,269 @@ body::before {
   margin-top: 20px;
   display: flex;
   gap: 12px;
+}
+
+/* ============================================
+   排行榜入口
+   ============================================ */
+.lb-entry {
+  padding: 0 20px 40px;
+  text-align: center;
+}
+
+.lb-entry-btn {
+  padding: 12px 32px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--accent);
+  border: 1px solid rgba(94, 234, 212, 0.2);
+  border-radius: 24px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lb-entry-btn:active {
+  transform: scale(0.96);
+  background: rgba(94, 234, 212, 0.12);
+}
+
+/* ============================================
+   分享页排名信息
+   ============================================ */
+.share-rank-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  background: rgba(94, 234, 212, 0.08);
+  border: 1px solid rgba(94, 234, 212, 0.15);
+  border-radius: 16px;
+}
+
+.share-rank-badge {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--accent);
+  font-family: 'Baloo 2', 'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif;
+}
+
+.share-rank-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* ============================================
+   排行榜弹窗
+   ============================================ */
+.lb-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.lb-modal.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.lb-modal-bg {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.lb-modal-content {
+  position: relative;
+  background: linear-gradient(180deg, var(--bg-tertiary), var(--bg-secondary));
+  border-radius: 24px 24px 0 0;
+  padding: 16px 20px calc(var(--safe-bottom) + 20px);
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+}
+
+.lb-modal.show .lb-modal-content {
+  transform: translateY(0);
+}
+
+.lb-modal-handle {
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  margin: 0 auto 12px;
+}
+
+.lb-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.lb-modal-header h3 {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.lb-modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.lb-modal-close:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* 歌曲切换标签 */
+.lb-song-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.lb-song-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.lb-song-tab {
+  padding: 6px 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.lb-song-tab.active {
+  background: rgba(94, 234, 212, 0.15);
+  color: var(--accent);
+  border-color: rgba(94, 234, 212, 0.3);
+}
+
+/* 排行榜列表 */
+.lb-list {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px;
+}
+
+.lb-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.lb-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  margin-bottom: 4px;
+  transition: background 0.15s ease;
+}
+
+.lb-item:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.lb-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.lb-item-rank {
+  width: 28px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-muted);
+  font-family: 'Baloo 2', sans-serif;
+  flex-shrink: 0;
+}
+
+.lb-item-rank.gold   { color: #FBBF24; }
+.lb-item-rank.silver { color: #CBD5E1; }
+.lb-item-rank.bronze { color: #CD7F32; }
+
+.lb-item-grade {
+  width: 36px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.lb-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.lb-item-score {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.lb-item-detail {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.lb-item-date {
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.lb-footer {
+  padding-top: 12px;
+  text-align: center;
+}
+
+.lb-clear-btn {
+  padding: 8px 20px;
+  background: rgba(251, 113, 133, 0.1);
+  color: var(--danger);
+  border: 1px solid rgba(251, 113, 133, 0.2);
+  border-radius: 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lb-clear-btn:active {
+  transform: scale(0.96);
 }
 
 /* ============================================
