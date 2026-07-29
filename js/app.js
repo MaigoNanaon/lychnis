@@ -52,8 +52,90 @@
     } else {
       const [c1, c2] = song.color;
       el.style.background = `linear-gradient(135deg, ${c1}, ${c2})`;
-      el.innerHTML = `<span style="font-size:28px">🎵</span>`;
+      el.innerHTML = `<span style="font-size:28px"></span>`;
     }
+  }
+
+  /** 从封面图提取加权平均色（亮度加权），返回 {r,g,b} */
+  function extractCoverColor(src) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const size = 32;
+          const canvas = document.createElement('canvas');
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, size, size);
+          const data = ctx.getImageData(0, 0, size, size).data;
+          let r = 0, g = 0, b = 0, totalWeight = 0;
+          for (let i = 0; i < data.length; i += 4) {
+            const cr = data[i], cg = data[i + 1], cb = data[i + 2];
+            const ca = data[i + 3];
+            if (ca < 128) continue;
+            // 亮度加权：越亮的像素权重越高，避免暗色主导
+            const lum = (0.299 * cr + 0.587 * cg + 0.114 * cb) / 255;
+            const weight = 0.3 + lum * 0.7;
+            r += cr * weight;
+            g += cg * weight;
+            b += cb * weight;
+            totalWeight += weight;
+          }
+          if (totalWeight === 0) return resolve(null);
+          resolve({
+            r: Math.round(r / totalWeight),
+            g: Math.round(g / totalWeight),
+            b: Math.round(b / totalWeight)
+          });
+        } catch (e) {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
+  }
+
+  /** 提取封面色并应用到播放页和游戏页背景 */
+  async function applyCoverTheme(song) {
+    let color = null;
+    if (song.cover) {
+      color = await extractCoverColor(song.cover);
+    }
+    if (!color && song.color) {
+      const hex = song.color[0].replace('#', '');
+      color = {
+        r: parseInt(hex.slice(0, 2), 16),
+        g: parseInt(hex.slice(2, 4), 16),
+        b: parseInt(hex.slice(4, 6), 16)
+      };
+    }
+    if (!color) return;
+
+    // 直接用封面色压暗，不混固定底色：顶部保留封面色调，底部更深
+    const darken = (cr, cg, cb, factor) => {
+      const r = Math.round(cr * factor);
+      const g = Math.round(cg * factor);
+      const b = Math.round(cb * factor);
+      return `rgb(${r}, ${g}, ${b})`;
+    };
+
+    const light = darken(color.r, color.g, color.b, 0.28);
+    const mid = darken(color.r, color.g, color.b, 0.15);
+    const dark = darken(color.r, color.g, color.b, 0.07);
+    const coverColor = `rgb(${color.r}, ${color.g}, ${color.b})`;
+
+    const player = $('#page-player');
+    const game = $('#page-game');
+    [player, game].forEach(p => {
+      if (!p) return;
+      p.style.setProperty('--cover-color', coverColor);
+      p.style.setProperty('--cover-light', light);
+      p.style.setProperty('--cover-mid', mid);
+      p.style.setProperty('--cover-dark', dark);
+    });
   }
 
   // ============================================
@@ -95,6 +177,7 @@
 
     $('#player-song-title').textContent = song.title;
     setCoverBackground($('#cover-disc-inner'), song);
+    applyCoverTheme(song);
     $('#cover-disc').classList.remove('spinning');
     $('#time-total').textContent = formatTime(song.duration * 1000);
     $('#time-current').textContent = '0:00';
@@ -194,9 +277,9 @@
 
   function showStartOverlay() {
     const overlay = $('#phase-overlay');
-    $('#phase-overlay-title').textContent = '开始游戏';
-    $('#phase-overlay-subtitle').textContent = '先观察教程段的节奏，然后在打击段模仿点击';
-    $('#phase-overlay-btn').textContent = '开始';
+    $('#phase-overlay-title').textContent = '准备好了吗？';
+    $('#phase-overlay-subtitle').textContent = '先记住节奏，再照着节奏轻打屏幕吧！';
+    $('#phase-overlay-btn').textContent = '开启Q弹';
     $('#phase-overlay-btn').onclick = () => {
       overlay.classList.remove('show');
       state.game.start();
@@ -217,12 +300,11 @@
   // 页面4: 分享页
   // ============================================
   function calcGrade(accuracy) {
-    if (accuracy >= 95) return 'SS';
-    if (accuracy >= 90) return 'S';
-    if (accuracy >= 80) return 'A';
-    if (accuracy >= 70) return 'B';
-    if (accuracy >= 60) return 'C';
-    return 'D';
+    if (accuracy >= 90) return 'SS';
+    if (accuracy >= 80) return 'S';
+    if (accuracy >= 70) return 'A';
+    if (accuracy >= 60) return 'B';
+    return 'C';
   }
 
   function openShare(game) {
@@ -259,23 +341,23 @@
     canvas.height = H;
     const ctx = canvas.getContext('2d');
 
-    const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-    bgGrad.addColorStop(0, '#1a1a2e');
-    bgGrad.addColorStop(0.5, '#16213e');
-    bgGrad.addColorStop(1, '#0f0f1e');
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+  bgGrad.addColorStop(0, '#0e3251');
+  bgGrad.addColorStop(0.5, '#0a2438');
+  bgGrad.addColorStop(1, '#061826');
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, W, H);
 
-    const glowGrad = ctx.createRadialGradient(W / 2, 300, 0, W / 2, 300, 400);
-    glowGrad.addColorStop(0, 'rgba(0,255,200,0.15)');
-    glowGrad.addColorStop(1, 'rgba(0,255,200,0)');
+      const glowGrad = ctx.createRadialGradient(W / 2, 300, 0, W / 2, 300, 400);
+  glowGrad.addColorStop(0, 'rgba(94,234,212,0.15)');
+  glowGrad.addColorStop(1, 'rgba(94,234,212,0)');
     ctx.fillStyle = glowGrad;
     ctx.fillRect(0, 0, W, 600);
 
-    ctx.fillStyle = '#00FFC8';
-    ctx.font = 'bold 36px -apple-system, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Lychnis 节奏挑战', W / 2, 100);
+      ctx.fillStyle = '#A78BFA';
+  ctx.font = 'bold 36px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Lychnis 节奏挑战', W / 2, 100);
 
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
     ctx.font = '24px -apple-system, sans-serif';
@@ -283,9 +365,9 @@
 
     const grade = calcGrade(r.accuracy);
     ctx.font = 'bold 180px -apple-system, sans-serif';
-    const gradeGrad = ctx.createLinearGradient(0, 180, 0, 420);
-    gradeGrad.addColorStop(0, '#00FFC8');
-    gradeGrad.addColorStop(1, '#4ECDC4');
+      const gradeGrad = ctx.createLinearGradient(0, 180, 0, 420);
+  gradeGrad.addColorStop(0, '#A78BFA');
+  gradeGrad.addColorStop(1, '#38BDF8');
     ctx.fillStyle = gradeGrad;
     ctx.fillText(grade, W / 2, 380);
 
@@ -305,10 +387,10 @@
     ctx.stroke();
 
     const stats = [
-      { label: 'Perfect', value: r.perfect, color: '#00FFC8' },
-      { label: 'Great', value: r.great, color: '#4ECDC4' },
-      { label: 'Good', value: r.good, color: '#FFD93D' },
-      { label: 'Miss', value: r.miss, color: '#FF6B6B' },
+          { label: 'Perfect', value: r.perfect, color: '#A78BFA' },
+    { label: 'Great', value: r.great, color: '#38BDF8' },
+    { label: 'Good', value: r.good, color: '#94A3B8' },
+    { label: 'Miss', value: r.miss, color: '#FB7185' },
     ];
     const statY = 720;
     const statW = (W - 160) / 4;
@@ -322,9 +404,9 @@
       ctx.fillText(s.label, x, statY + 40);
     });
 
-    ctx.fillStyle = 'rgba(0,255,200,0.6)';
-    ctx.font = 'bold 28px -apple-system, sans-serif';
-    ctx.fillText('🎵 Lychnis', W / 2, H - 120);
+      ctx.fillStyle = 'rgba(94,234,212,0.6)';
+  ctx.font = 'bold 28px -apple-system, sans-serif';
+  ctx.fillText('Lychnis', W / 2, H - 120);
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
     ctx.font = '20px -apple-system, sans-serif';
     ctx.fillText('用你喜欢的歌，玩节奏游戏', W / 2, H - 80);
@@ -388,6 +470,14 @@
         state.game.tap();
       }
     });
+
+    // 阻止触屏双击缩放
+    let lastTouchEnd = 0;
+    $('#game-tap-area').addEventListener('touchend', (e) => {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, { passive: false });
 
     // 分享页
     $('#btn-generate-image').addEventListener('click', generateShareImage);

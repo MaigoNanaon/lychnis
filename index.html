@@ -3,10 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#0f0f1e">
+  <meta name="theme-color" content="#061826">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Lychnis · 节奏游戏</title>
+  <link rel="preconnect" href="https://fonts.googleapis.cn">
+  <link rel="preconnect" href="https://fonts.gstatic.cn" crossorigin>
+  <link href="https://fonts.googleapis.cn/css2?family=Baloo+2:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800;900&family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -17,7 +20,7 @@
   <!-- ============================================ -->
   <section id="page-library" class="page active">
     <div class="library-header">
-      <h1 class="library-title">🎵 Lychnis</h1>
+      <h1 class="library-title">Lychnis</h1>
       <p class="library-subtitle">听歌 · 记忆节奏 · 模仿打击</p>
     </div>
     <div class="song-list" id="song-list"></div>
@@ -61,7 +64,7 @@
       </div>
 
       <button class="game-entry-btn" id="game-entry-btn">
-        🎮 开始节奏挑战
+        开始节奏挑战
       </button>
     </div>
   </section>
@@ -77,28 +80,34 @@
 
     <div class="game-info-bar">
       <div class="info-item">
-        <div class="info-label">Score</div>
-        <div class="info-value" id="game-score">0</div>
+        <div class="info-label">得分</div>
+        <div class="info-value info-score" id="game-score">0</div>
       </div>
       <div class="info-item">
-        <div class="info-label">Combo</div>
-        <div class="info-value" id="game-combo">0</div>
+        <div class="info-label">连击</div>
+        <div class="info-value info-combo" id="game-combo">0</div>
       </div>
       <div class="info-item">
-        <div class="info-label">Accuracy</div>
-        <div class="info-value" id="game-accuracy">100%</div>
+        <div class="info-label">精准</div>
+        <div class="info-value info-acc" id="game-accuracy">100%</div>
       </div>
     </div>
 
     <div id="game-stage"></div>
 
+    <!-- 游戏内歌曲进度条 -->
+    <div class="game-progress" id="game-progress">
+      <div class="game-progress-bar" id="game-progress-bar"></div>
+    </div>
+
     <div class="game-tap-area" id="game-tap-area"></div>
 
     <!-- 阶段切换遮罩 -->
     <div class="phase-overlay" id="phase-overlay">
-      <div class="phase-overlay-title" id="phase-overlay-title">开始游戏</div>
-      <div class="phase-overlay-subtitle" id="phase-overlay-subtitle">先观察教程段的节奏，然后在打击段模仿点击</div>
-      <button class="phase-overlay-btn" id="phase-overlay-btn">开始</button>
+      <div class="phase-overlay-icon"></div>
+      <div class="phase-overlay-title" id="phase-overlay-title">准备好了吗？</div>
+      <div class="phase-overlay-subtitle" id="phase-overlay-subtitle">先看一遍教程段的节奏，再在打击段照着打！</div>
+      <button class="phase-overlay-btn" id="phase-overlay-btn">开始挑战</button>
     </div>
 
     <!-- 帮助弹窗 -->
@@ -109,21 +118,21 @@
         <h3>玩法说明</h3>
         <div class="help-step">
           <div class="help-step-num">1</div>
-          <div class="help-step-text">歌曲连续播放不停顿，谱面分为三种段落交替出现。</div>
+          <div class="help-step-text">歌曲会一直播放不停，谱面分为三种段落交替出现～</div>
         </div>
         <div class="help-step">
           <div class="help-step-num">2</div>
-          <div class="help-step-text">👁 <b>教程段</b>：荧光扫描线从左到右扫过长条，经过音符点会自动点亮。请仔细观察并记忆节奏。</div>
+          <div class="help-step-text"><b>教程段</b>：荧光扫描线从左到右扫过，经过音符点会自动点亮。仔细看，记住节奏！</div>
         </div>
         <div class="help-step">
           <div class="help-step-num">3</div>
-          <div class="help-step-text">👆 <b>打击段</b>：相同的节奏型再次出现，这次需要你自己在扫描线经过音符点时点击屏幕。</div>
+          <div class="help-step-text"><b>打击段</b>：同样的节奏再来一遍，这次轮到你来点！跟着扫描线的位置打就行。</div>
         </div>
         <div class="help-step">
           <div class="help-step-num">4</div>
-          <div class="help-step-text">判定越精准得分越高：Perfect > Great > Good > Miss。连击不中断有额外加分。</div>
+          <div class="help-step-text">打得越准分越高：Perfect &gt; Great &gt; Good &gt; Miss。连击不断有额外加分哦！</div>
         </div>
-        <button class="help-modal-close" id="help-modal-close">知道了</button>
+        <button class="help-modal-close" id="help-modal-close">知道了！</button>
       </div>
     </div>
   </section>
