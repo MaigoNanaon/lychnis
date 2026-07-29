@@ -320,14 +320,49 @@
     };
     state.gameResult = r;
 
+    // 提交到本地排行榜
+    const grade = calcGrade(r.accuracy);
+    const rank = Leaderboard.submit({
+      songId: state.currentSong.id,
+      songTitle: state.currentSong.title,
+      score: r.score,
+      accuracy: r.accuracy,
+      maxCombo: r.maxCombo,
+      grade: grade,
+      perfect: r.perfect,
+      great: r.great,
+      good: r.good,
+      miss: r.miss,
+      total: r.total
+    });
+
+    state.lastRank = rank;
+    state.lastBest = Leaderboard.getBest(state.currentSong.id);
+
     showPage('share');
-    $('#share-grade').textContent = calcGrade(r.accuracy);
+    $('#share-grade').textContent = grade;
     $('#share-score-value').textContent = r.score.toLocaleString();
     $('#share-score-accuracy').textContent = `准确率 ${r.accuracy.toFixed(1)}%  ·  最高连击 ${r.maxCombo}`;
     $('#share-perfect').textContent = r.perfect;
     $('#share-great').textContent = r.great;
     $('#share-good').textContent = r.good;
     $('#share-miss').textContent = r.miss;
+
+    // 显示排名信息
+    const rankInfo = $('#share-rank-info');
+    const rankBadge = $('#share-rank-badge');
+    const rankText = $('#share-rank-text');
+    if (rank === 1) {
+      rankInfo.style.display = 'flex';
+      rankBadge.textContent = '#1';
+      rankText.textContent = '🎉 本曲最高分！';
+    } else if (rank && rank > 1) {
+      rankInfo.style.display = 'flex';
+      rankBadge.textContent = '#' + rank;
+      rankText.textContent = `本曲第 ${rank} 名 · 最高 ${state.lastBest ? state.lastBest.score.toLocaleString() : 0}`;
+    } else {
+      rankInfo.style.display = 'none';
+    }
   }
 
   function generateShareImage() {
@@ -429,6 +464,65 @@
   }
 
   // ============================================
+  // 排行榜弹窗
+  // ============================================
+  function showLeaderboard(songId) {
+    const targetId = songId || (SONGS[0] && SONGS[0].id);
+    state.lbCurrentSongId = targetId;
+
+    // 渲染歌曲标签
+    const tabsEl = $('#lb-song-tabs');
+    tabsEl.innerHTML = '';
+    SONGS.forEach(song => {
+      const tab = document.createElement('div');
+      tab.className = 'lb-song-tab' + (song.id === targetId ? ' active' : '');
+      tab.textContent = song.title;
+      tab.addEventListener('click', () => {
+        state.lbCurrentSongId = song.id;
+        tabsEl.querySelectorAll('.lb-song-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        renderLeaderboardList(song.id);
+      });
+      tabsEl.appendChild(tab);
+    });
+
+    renderLeaderboardList(targetId);
+    $('#lb-modal').classList.add('show');
+  }
+
+  function closeLeaderboard() {
+    $('#lb-modal').classList.remove('show');
+  }
+
+  function renderLeaderboardList(songId) {
+    const list = Leaderboard.getBySong(songId);
+    const listEl = $('#lb-list');
+
+    if (list.length === 0) {
+      listEl.innerHTML = '<div class="lb-empty">暂无记录，快去挑战吧！</div>';
+      return;
+    }
+
+    const rankClasses = ['gold', 'silver', 'bronze'];
+    listEl.innerHTML = '';
+    list.forEach((r, i) => {
+      const item = document.createElement('div');
+      item.className = 'lb-item';
+      const rankCls = i < 3 ? rankClasses[i] : '';
+      item.innerHTML = `
+        <div class="lb-item-rank ${rankCls}">${i + 1}</div>
+        <div class="lb-item-grade">${r.grade}</div>
+        <div class="lb-item-info">
+          <div class="lb-item-score">${r.score.toLocaleString()}</div>
+          <div class="lb-item-detail">${r.accuracy.toFixed(1)}% · 连击 ${r.maxCombo} · ${r.perfect}P ${r.great}G ${r.good}g ${r.miss}M</div>
+        </div>
+        <div class="lb-item-date">${r.date}</div>
+      `;
+      listEl.appendChild(item);
+    });
+  }
+
+  // ============================================
   // 事件绑定
   // ============================================
   function bindEvents() {
@@ -487,6 +581,19 @@
       $('#share-image-preview').classList.remove('show');
     });
     $('#btn-download-image').addEventListener('click', downloadShareImage);
+
+    // 排行榜弹窗
+    $('#lb-entry-btn').addEventListener('click', () => showLeaderboard());
+    $('#btn-view-rank').addEventListener('click', () => showLeaderboard(state.currentSong ? state.currentSong.id : null));
+    $('#lb-modal-bg').addEventListener('click', closeLeaderboard);
+    $('#lb-modal-close').addEventListener('click', closeLeaderboard);
+    $('#lb-clear-btn').addEventListener('click', () => {
+      if (confirm('确定清空所有排行榜记录吗？')) {
+        Leaderboard.clear();
+        showToast('排行榜已清空');
+        renderLeaderboardList(state.lbCurrentSongId || (SONGS[0] && SONGS[0].id));
+      }
+    });
 
     window.addEventListener('resize', () => {
       if (state.game) state.game._resize();
