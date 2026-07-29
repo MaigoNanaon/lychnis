@@ -112,6 +112,16 @@ class RhythmGame {
     if (this.container) this.container.innerHTML = '';
   }
 
+  /** 中止游戏：停止音频和渲染，不触发 onEnd/onPhaseChange，不保存成绩 */
+  abort() {
+    this.phase = 'aborted';
+    this._stopLoop();
+    this.audio.stop();
+    this.audio.onTimeUpdate = null;
+    if (this.container) this.container.innerHTML = '';
+    if (this.callbacks.onAbort) this.callbacks.onAbort();
+  }
+
   // ============================================
   // 时间补偿
   // ============================================
