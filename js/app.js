@@ -10,11 +10,26 @@
     audio: new AudioEngine(),
     game: null,
     gameResult: null,
+    mode: 'solo',
+    duelPhase: 'home',
+    matchSessionId: 0,
+    matchTimer: null,
+    matchDelayResolve: null,
+    matchedShadow: null,
+    lastMatchedShadowId: null,
+    duelGame: null,
+    duelResult: null,
+    duelRenderers: null,
+    duelResultTimer: null,
   };
 
   const $ = (sel) => document.querySelector(sel);
   const pages = {
     library: $('#page-library'),
+    duelMatching: $('#page-duel-matching'),
+    duelOpponent: $('#page-duel-opponent'),
+    duelGame: $('#page-duel-game'),
+    duelResult: $('#page-duel-result'),
     player: $('#page-player'),
     game: $('#page-game'),
     share: $('#page-share'),
@@ -124,7 +139,8 @@
 
     const player = $('#page-player');
     const game = $('#page-game');
-    [player, game].forEach(p => {
+    const duelGame = $('#page-duel-game');
+    [player, game, duelGame].forEach(p => {
       if (!p) return;
       p.style.setProperty('--cover-color', coverColor);
       p.style.setProperty('--cover-light', light);
@@ -207,6 +223,298 @@
         }
       });
     });
+  }
+
+  // ============================================
+  // 影子对决：匹配与对手确认
+  // ============================================
+  function getLocalPlayerRating() {
+    const stored = Number(localStorage.getItem('qbeat-player-rating'));
+    return Number.isFinite(stored) && stored > 0 ? stored : 1200;
+  }
+
+  function clearMatchTimer() {
+    if (state.matchTimer) clearTimeout(state.matchTimer);
+    state.matchTimer = null;
+    if (state.matchDelayResolve) state.matchDelayResolve();
+    state.matchDelayResolve = null;
+  }
+
+  function loadAudioWithTimeout(song, timeoutMs = 8000) {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('audio-load-timeout')), timeoutMs);
+      state.audio.load(song.audio).then(value => {
+        clearTimeout(timeout);
+        resolve(value);
+      }).catch(error => {
+        clearTimeout(timeout);
+        reject(error);
+      });
+    });
+  }
+
+  function selectMatchedShadow() {
+    const playerRating = getLocalPlayerRating();
+    const candidates = validateShadowPool()
+      .filter(result => result.valid)
+      .map(result => result.shadow)
+      .sort((left, right) => {
+        const leftGap = Math.abs(left.profile.rating - playerRating);
+        const rightGap = Math.abs(right.profile.rating - playerRating);
+        return leftGap - rightGap;
+      });
+
+    if (candidates.length > 0) {
+      return candidates.find(shadow => shadow.id !== state.lastMatchedShadowId) || candidates[0];
+    }
+    const fallbackSong = SONGS.find(song => getDuelTargetNotes(song).length > 0) || SONGS[0];
+    return generateFallbackShadow(fallbackSong, `match-${state.matchSessionId}`);
+  }
+
+  function renderMatchedOpponent(shadow) {
+    const song = getSongById(shadow.songId);
+    if (!song) {
+      showToast('对手曲目不可用，请重新匹配');
+      cancelShadowMatch();
+      return;
+    }
+
+    state.matchedShadow = shadow;
+    state.lastMatchedShadowId = shadow.id;
+    state.currentSong = song;
+    state.duelPhase = 'opponent-ready';
+    $('#duel-opponent-avatar').textContent = shadow.profile.name.slice(-1);
+    $('#duel-opponent-name').textContent = shadow.profile.name;
+    $('#duel-opponent-source').textContent = shadow.source === 'recorded' ? '历史影像' : '训练影子';
+    $('#duel-opponent-rating').textContent = shadow.profile.rating;
+    $('#duel-song-cover').src = song.cover;
+    $('#duel-song-cover').alt = `${song.title} 封面`;
+    $('#duel-song-title').textContent = song.title;
+    $('#duel-song-meta').textContent = `${song.artist} · ${song.difficulty} · ${song.duration}s`;
+    showPage('duelOpponent');
+  }
+
+  function startShadowMatch() {
+    if (state.duelPhase === 'matching') return;
+    stopPlayer();
+    clearMatchTimer();
+    state.mode = 'shadow-duel';
+    state.duelPhase = 'matching';
+    state.matchedShadow = null;
+    state.matchSessionId += 1;
+    const sessionId = state.matchSessionId;
+    const playerRating = getLocalPlayerRating();
+    $('#duel-match-skill-label').textContent = `当前能力值 ${playerRating} · 正在分析节奏表现`;
+    $('#duel-match-retry-btn').classList.remove('show');
+    $('.duel-matching-dots').style.display = 'flex';
+    showPage('duelMatching');
+
+    const shadow = selectMatchedShadow();
+    const song = getSongById(shadow.songId);
+    const minimumDelay = new Promise(resolve => {
+      state.matchDelayResolve = resolve;
+      state.matchTimer = setTimeout(() => {
+        state.matchTimer = null;
+        state.matchDelayResolve = null;
+        resolve();
+      }, 3000);
+    });
+    const audioReady = song
+      ? loadAudioWithTimeout(song).then(() => true).catch(() => false)
+      : Promise.resolve(false);
+
+    Promise.all([minimumDelay, audioReady]).then(([, loaded]) => {
+      if (state.matchSessionId !== sessionId || state.duelPhase !== 'matching') return;
+      state.matchTimer = null;
+      if (!loaded) {
+        state.duelPhase = 'match-error';
+        $('#duel-match-skill-label').textContent = '歌曲加载失败，请检查网络或重新尝试';
+        $('.duel-matching-dots').style.display = 'none';
+        $('#duel-match-retry-btn').classList.add('show');
+        return;
+      }
+      renderMatchedOpponent(shadow);
+    });
+  }
+
+  function cancelShadowMatch() {
+    clearMatchTimer();
+    state.audio.stop();
+    state.matchSessionId += 1;
+    state.duelPhase = 'home';
+    state.matchedShadow = null;
+    state.mode = 'solo';
+    showPage('library');
+  }
+
+  function confirmShadowDuel() {
+    if (!state.matchedShadow || !state.currentSong) return;
+    openDuelGame();
+  }
+
+  function updateDuelLiveStats(side, judgeInfo) {
+    $(`#duel-${side}-score`).textContent = judgeInfo.score;
+    $(`#duel-${side}-combo`).textContent = judgeInfo.combo;
+  }
+
+  function updateDuelLead(playerScore, shadowScore) {
+    const diff = playerScore - shadowScore;
+    $('#duel-score-diff').textContent = `分差 ${Math.abs(diff)}`;
+    $('#duel-lead-label').textContent = diff === 0 ? '势均力敌' : diff > 0 ? '你暂时领先' : '影子暂时领先';
+  }
+
+  function applyDuelRating(result) {
+    if (result.aborted || result.ratingApplied) return null;
+    const currentRating = getLocalPlayerRating();
+    const shadowRating = state.matchedShadow.profile.rating;
+    const expected = 1 / (1 + Math.pow(10, (shadowRating - currentRating) / 400));
+    const actual = result.winner.outcome === 'win' ? 1 : result.winner.outcome === 'draw' ? 0.5 : 0;
+    const nextRating = Math.max(600, Math.round(currentRating + 32 * (actual - expected)));
+    localStorage.setItem('qbeat-player-rating', String(nextRating));
+    result.ratingApplied = true;
+    return { before: currentRating, after: nextRating, delta: nextRating - currentRating };
+  }
+
+  function openDuelResult(result) {
+    exitDuelGame(false);
+    state.duelResult = result;
+    state.duelPhase = result.aborted ? 'aborted' : 'finished';
+    const outcome = result.winner.outcome;
+    const display = {
+      win: ['WIN', '对决胜利', '你以稳定的节奏赢下了这场对决'],
+      lose: ['LOSE', '惜败于影子', '只差一点，再挑战一次就能反超'],
+      draw: ['DRAW', '真正的旗鼓相当', '你们打出了完全相同的结果'],
+      aborted: ['STOP', '本局已中止', '中止对局不会影响你的能力值']
+    }[outcome];
+
+    $('#duel-result-emblem').textContent = display[0];
+    $('#duel-result-emblem').className = `duel-result-emblem is-${outcome}`;
+    $('#duel-result-title').textContent = display[1];
+    $('#duel-result-subtitle').textContent = display[2];
+    $('#duel-result-shadow-name').textContent = state.matchedShadow.profile.name;
+    $('#duel-result-player-score').textContent = result.player.score.toLocaleString();
+    $('#duel-result-shadow-score').textContent = result.shadow.score.toLocaleString();
+    $('#duel-result-player-detail').textContent = `${result.player.accuracy.toFixed(1)}% · 连击 ${result.player.maxCombo}`;
+    $('#duel-result-shadow-detail').textContent = `${result.shadow.accuracy.toFixed(1)}% · 连击 ${result.shadow.maxCombo}`;
+    ['perfect', 'great', 'good', 'miss'].forEach(key => {
+      $(`#duel-result-${key}`).textContent = `${result.player[key]} : ${result.shadow[key]}`;
+    });
+
+    const rating = applyDuelRating(result);
+    if (!rating) {
+      $('#duel-rating-change').textContent = result.aborted ? '能力值不受影响' : '能力值已结算';
+    } else {
+      const sign = rating.delta >= 0 ? '+' : '';
+      $('#duel-rating-change').textContent = `能力值 ${rating.after}（${sign}${rating.delta}）`;
+    }
+    showPage('duelResult');
+  }
+
+  function openDuelGame() {
+    exitDuelGame(false);
+    state.mode = 'shadow-duel';
+    state.duelPhase = 'playing';
+    state.duelResult = null;
+    $('#duel-game-song-title').textContent = state.currentSong.title;
+    $('#duel-game-shadow-name').textContent = state.matchedShadow.profile.name;
+    $('#duel-game-shadow-avatar').textContent = state.matchedShadow.profile.name.slice(-1);
+    ['player', 'shadow'].forEach(side => {
+      $(`#duel-${side}-score`).textContent = '0';
+      $(`#duel-${side}-combo`).textContent = '0';
+    });
+    $('#duel-lead-label').textContent = '势均力敌';
+    $('#duel-score-diff').textContent = '分差 0';
+    $('#duel-progress-bar').style.width = '0%';
+    $('#duel-pause-overlay').classList.remove('show');
+    applyCoverTheme(state.currentSong);
+    showPage('duelGame');
+
+    const segments = compileChart(state.currentSong);
+    const shadowRenderer = new DuelLaneRenderer($('#duel-shadow-stage'), segments, 'shadow');
+    const playerRenderer = new DuelLaneRenderer($('#duel-player-stage'), segments, 'player');
+    shadowRenderer.init();
+    playerRenderer.init();
+    state.duelRenderers = { shadow: shadowRenderer, player: playerRenderer };
+
+    state.duelGame = new DuelGame(state.currentSong, state.matchedShadow, state.audio, {
+      onPlayerJudge: info => {
+        playerRenderer.update(info.noteTime == null ? info.eventTime : info.noteTime);
+        playerRenderer.renderJudge(info);
+        updateDuelLiveStats('player', info);
+      },
+      onShadowJudge: info => {
+        shadowRenderer.update(info.noteTime == null ? info.eventTime : info.noteTime);
+        shadowRenderer.renderJudge(info);
+        updateDuelLiveStats('shadow', info);
+      },
+      onTimeUpdate: info => {
+        playerRenderer.update(info.currentTime);
+        shadowRenderer.update(info.currentTime);
+        updateDuelLead(info.player.score, info.shadow.score);
+        const progress = Math.min(100, Math.max(0, info.currentTime / info.duration * 100));
+        $('#duel-progress-bar').style.width = `${progress}%`;
+      },
+      onEnd: result => {
+        state.duelResult = result;
+        state.duelPhase = result.aborted ? 'aborted' : 'finished';
+        clearTimeout(state.duelResultTimer);
+        state.duelResultTimer = setTimeout(() => {
+          state.duelResultTimer = null;
+          openDuelResult(result);
+        }, result.aborted ? 0 : 650);
+      }
+    });
+    state.duelGame.init();
+    state.duelGame.start();
+  }
+
+  function exitDuelGame(returnToOpponent = true) {
+    clearTimeout(state.duelResultTimer);
+    state.duelResultTimer = null;
+    if (state.duelGame) {
+      state.duelGame.destroy();
+      state.duelGame = null;
+    }
+    if (state.duelRenderers) {
+      state.duelRenderers.player.destroy();
+      state.duelRenderers.shadow.destroy();
+      state.duelRenderers = null;
+    }
+    state.audio.stop();
+    if (returnToOpponent && state.matchedShadow) {
+      state.duelPhase = 'opponent-ready';
+      showPage('duelOpponent');
+    }
+  }
+
+  function abortOrExitDuel() {
+    if (state.duelGame && (state.duelGame.phase === 'playing' || state.duelGame.phase === 'paused')) {
+      state.duelGame.abort();
+      return;
+    }
+    exitDuelGame(true);
+  }
+
+  function pauseDuelForBackground() {
+    if (!state.duelGame || state.duelGame.phase !== 'playing') return;
+    state.duelGame.pause();
+    $('#duel-pause-overlay').classList.add('show');
+  }
+
+  function resumeDuelFromOverlay() {
+    if (!state.duelGame || state.duelGame.phase !== 'paused') return;
+    $('#duel-pause-overlay').classList.remove('show');
+    state.duelGame.resume();
+  }
+
+  function returnDuelHome() {
+    exitDuelGame(false);
+    state.matchSessionId += 1;
+    state.mode = 'solo';
+    state.duelPhase = 'home';
+    state.matchedShadow = null;
+    state.duelResult = null;
+    showPage('library');
   }
 
   // ============================================
@@ -591,6 +899,28 @@
   // 事件绑定
   // ============================================
   function bindEvents() {
+    // 影子对决匹配
+    $('#shadow-duel-entry-btn').addEventListener('click', startShadowMatch);
+    $('#duel-match-cancel-btn').addEventListener('click', cancelShadowMatch);
+    $('#duel-match-cancel-secondary-btn').addEventListener('click', cancelShadowMatch);
+    $('#duel-match-retry-btn').addEventListener('click', startShadowMatch);
+    $('#duel-opponent-back-btn').addEventListener('click', cancelShadowMatch);
+    $('#duel-rematch-btn').addEventListener('click', startShadowMatch);
+    $('#duel-start-btn').addEventListener('click', confirmShadowDuel);
+    $('#duel-game-back-btn').addEventListener('click', abortOrExitDuel);
+    $('#duel-game-stop-btn').addEventListener('click', abortOrExitDuel);
+    $('#duel-game-help-btn').addEventListener('click', () => {
+      showToast('上方是影子，下方是你。跟随扫描线轻点下半屏！', 3200);
+    });
+    $('#duel-player-tap-area').addEventListener('pointerdown', event => {
+      if (event.target.closest('button')) return;
+      if (state.duelGame && state.duelGame.phase === 'playing') state.duelGame.tap();
+    });
+    $('#duel-resume-btn').addEventListener('click', resumeDuelFromOverlay);
+    $('#duel-retry-btn').addEventListener('click', openDuelGame);
+    $('#duel-result-rematch-btn').addEventListener('click', startShadowMatch);
+    $('#duel-result-home-btn').addEventListener('click', returnDuelHome);
+
     // 播放页
     $('#player-back-btn').addEventListener('click', () => {
       stopPlayer();
@@ -700,6 +1030,9 @@
     initLibrary();
     initLibraryTabs();
     bindEvents();
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) pauseDuelForBackground();
+    });
 
     // 横竖屏事件监听
     window.addEventListener('resize', handleViewportChange);

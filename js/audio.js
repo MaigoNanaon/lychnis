@@ -37,6 +37,7 @@ class AudioEngine {
 
   /** 暂停 */
   pause() {
+    this.startOffset = this.audioEl.currentTime * 1000;
     this.audioEl.pause();
     this._stopLoop();
   }

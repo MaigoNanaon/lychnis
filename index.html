@@ -23,6 +23,14 @@
       <section class="page-header" aria-labelledby="page-title">
         <h1 id="page-title" class="page-title">Q-beat!</h1>
         <p class="page-subtitle">听歌 · 记忆节奏 · 模仿打击</p>
+        <button class="shadow-duel-entry" id="shadow-duel-entry-btn">
+          <span class="shadow-duel-entry-icon" aria-hidden="true">◐</span>
+          <span>
+            <strong>开始对决</strong>
+            <small>匹配一位旗鼓相当的节奏影子</small>
+          </span>
+          <span class="shadow-duel-entry-arrow" aria-hidden="true">›</span>
+        </button>
       </section>
 
       <nav class="tab-bar" role="tablist" aria-label="难度筛选">
@@ -65,7 +73,146 @@
   </section>
 
   <!-- ============================================ -->
-  <!-- 页面2: 播放页                                 -->
+  <!-- 页面2: 影子匹配                              -->
+  <!-- ============================================ -->
+  <section id="page-duel-matching" class="page duel-flow-page" aria-live="polite">
+    <button class="duel-flow-back" id="duel-match-cancel-btn" aria-label="取消匹配">‹</button>
+    <div class="duel-matching-content">
+      <div class="duel-radar" aria-hidden="true">
+        <span class="duel-radar-core">◐</span>
+        <i></i><i></i><i></i>
+      </div>
+      <p class="duel-eyebrow">SHADOW DUEL</p>
+      <h2>正在寻找旗鼓相当的对手…</h2>
+      <p id="duel-match-skill-label">正在分析你的节奏表现</p>
+      <div class="duel-matching-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+      <button class="duel-primary-btn duel-match-retry" id="duel-match-retry-btn">重新尝试</button>
+      <button class="duel-secondary-btn" id="duel-match-cancel-secondary-btn">取消匹配</button>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- 页面3: 对手确认                              -->
+  <!-- ============================================ -->
+  <section id="page-duel-opponent" class="page duel-flow-page">
+    <button class="duel-flow-back" id="duel-opponent-back-btn" aria-label="返回首页">‹</button>
+    <div class="duel-opponent-content">
+      <p class="duel-eyebrow">MATCH FOUND</p>
+      <h2>找到旗鼓相当的对手</h2>
+      <div class="duel-opponent-card">
+        <div class="duel-avatar" id="duel-opponent-avatar" aria-hidden="true">影</div>
+        <div class="duel-opponent-name" id="duel-opponent-name">--</div>
+        <div class="duel-opponent-badges">
+          <span class="duel-equal-badge">旗鼓相当</span>
+          <span class="duel-source-badge" id="duel-opponent-source">历史影像</span>
+        </div>
+        <div class="duel-opponent-rating"><span>能力值</span><strong id="duel-opponent-rating">--</strong></div>
+        <div class="duel-song-preview">
+          <img id="duel-song-cover" src="" alt="">
+          <div>
+            <span>本局曲目</span>
+            <strong id="duel-song-title">--</strong>
+            <small id="duel-song-meta">--</small>
+          </div>
+        </div>
+      </div>
+      <button class="duel-primary-btn" id="duel-start-btn">开始对决</button>
+      <button class="duel-secondary-btn" id="duel-rematch-btn">换一个对手</button>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- 页面4: 影子对决                              -->
+  <!-- ============================================ -->
+  <section id="page-duel-game" class="page">
+    <div class="duel-game-topbar">
+      <button class="icon-btn" id="duel-game-back-btn" aria-label="退出对决">‹</button>
+      <div class="duel-game-song">
+        <strong id="duel-game-song-title">--</strong>
+        <span>影子对决</span>
+      </div>
+      <div class="duel-game-actions">
+        <button class="icon-btn" id="duel-game-stop-btn" aria-label="停止对决">⏹</button>
+        <button class="icon-btn" id="duel-game-help-btn" aria-label="玩法说明">?</button>
+      </div>
+    </div>
+
+    <div class="duel-arena">
+      <section class="duel-lane duel-shadow-lane" aria-label="影子轨道">
+        <div class="duel-lane-header">
+          <div class="duel-mini-avatar" id="duel-game-shadow-avatar">影</div>
+          <div class="duel-lane-name"><span>SHADOW</span><strong id="duel-game-shadow-name">--</strong></div>
+          <div class="duel-live-stat"><span>分数</span><strong id="duel-shadow-score">0</strong></div>
+          <div class="duel-live-stat"><span>连击</span><strong id="duel-shadow-combo">0</strong></div>
+        </div>
+        <div class="duel-lane-stage" id="duel-shadow-stage"></div>
+      </section>
+
+      <div class="duel-versus-bar">
+        <span id="duel-lead-label">势均力敌</span>
+        <strong>VS</strong>
+        <span id="duel-score-diff">分差 0</span>
+        <div class="duel-progress"><div id="duel-progress-bar"></div></div>
+      </div>
+
+      <section class="duel-lane duel-player-lane" id="duel-player-tap-area" aria-label="玩家轨道，点击此区域打击">
+        <div class="duel-lane-header">
+          <div class="duel-mini-avatar duel-player-avatar">我</div>
+          <div class="duel-lane-name"><span>PLAYER</span><strong>你</strong></div>
+          <div class="duel-live-stat"><span>分数</span><strong id="duel-player-score">0</strong></div>
+          <div class="duel-live-stat"><span>连击</span><strong id="duel-player-combo">0</strong></div>
+        </div>
+        <div class="duel-lane-stage" id="duel-player-stage"></div>
+        <div class="duel-tap-hint">轻点下半屏打击</div>
+      </section>
+    </div>
+    <div class="duel-pause-overlay" id="duel-pause-overlay">
+      <strong>对决已暂停</strong>
+      <span>页面回到前台后，点击继续对决</span>
+      <button class="duel-primary-btn" id="duel-resume-btn">继续对决</button>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- 页面5: 对决结算                              -->
+  <!-- ============================================ -->
+  <section id="page-duel-result" class="page duel-flow-page">
+    <div class="duel-result-content">
+      <p class="duel-eyebrow">DUEL RESULT</p>
+      <div class="duel-result-emblem" id="duel-result-emblem">WIN</div>
+      <h2 id="duel-result-title">对决胜利</h2>
+      <p class="duel-result-subtitle" id="duel-result-subtitle">你以稳定的节奏赢下了这场对决</p>
+
+      <div class="duel-result-scoreboard">
+        <div class="duel-result-side player">
+          <span>你</span>
+          <strong id="duel-result-player-score">0</strong>
+          <small id="duel-result-player-detail">--</small>
+        </div>
+        <div class="duel-result-vs">VS</div>
+        <div class="duel-result-side shadow">
+          <span id="duel-result-shadow-name">影子</span>
+          <strong id="duel-result-shadow-score">0</strong>
+          <small id="duel-result-shadow-detail">--</small>
+        </div>
+      </div>
+
+      <div class="duel-result-breakdown">
+        <div><span>Perfect</span><strong id="duel-result-perfect">0 : 0</strong></div>
+        <div><span>Great</span><strong id="duel-result-great">0 : 0</strong></div>
+        <div><span>Good</span><strong id="duel-result-good">0 : 0</strong></div>
+        <div><span>Miss</span><strong id="duel-result-miss">0 : 0</strong></div>
+      </div>
+
+      <div class="duel-rating-change" id="duel-rating-change">能力值保持不变</div>
+      <button class="duel-primary-btn" id="duel-retry-btn">再来一局</button>
+      <button class="duel-secondary-btn" id="duel-result-rematch-btn">换个对手</button>
+      <button class="duel-secondary-btn" id="duel-result-home-btn">返回首页</button>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- 页面6: 播放页                                 -->
   <!-- ============================================ -->
   <section id="page-player" class="page">
     <div class="player-topbar">
@@ -274,7 +421,10 @@
 </div>
 
 <script src="js/songs.js"></script>
+<script src="js/shadows.js"></script>
+<script src="js/shadow-generator.js"></script>
 <script src="js/audio.js"></script>
+<script src="js/duel.js"></script>
 <script src="js/game.js"></script>
 <script src="js/leaderboard.js"></script>
 <script src="js/app.js"></script>
