@@ -71,7 +71,6 @@ function compileChart(song) {
 const SONGS = [
   {
     id: 'harehareya',
-    chartVersion: 'harehareya-v1',
     title: 'ハレハレヤ',
     artist: '神秘组员早期翻唱',
     cover: 'assets/covers/harehareya.jpg',
@@ -80,7 +79,9 @@ const SONGS = [
     duration: 136,
     difficulty: '简单',
     color: ['#38BDF8', '#0EA5E9'],
-    offset: 0.71,
+    offset: 0.71,   // 0 拍位置 = 歌曲 0.000 秒
+    // —— 新格式：每个 seg 单独定义，单位 beat（1 四分音符 = 1 拍） ——
+    // 音符只在 [1, 1.5, 3.5] 拍；play 段 playMode 在 1 / 3 间交替。
     segments: [
       { type: 'tutorial', beatStart: -0.5,   beatEnd: 3.5,   notes: [0, 2], message:"记住节奏～"},
       { type: 'play',     beatStart: 3.5,   beatEnd: 7.5,   notes: [4, 6 ], playMode: 1 },
@@ -123,7 +124,6 @@ const SONGS = [
   },
   {
     id: 'yuureitokyo',
-    chartVersion: 'yuureitokyo-v1',
     title: '幽霊東京',
     artist: '神秘组员早期翻唱',
     cover: 'assets/covers/yuureitokyo.png',
@@ -200,7 +200,6 @@ const SONGS = [
   },
   {
     id: 'qingtian',
-    chartVersion: 'qingtian-v1',
     title: '晴天',
     artist: '周杰伦',
     cover: 'assets/covers/晴天.jpeg',
@@ -209,7 +208,8 @@ const SONGS = [
     duration: 145,
     difficulty: '中等',
     color: ['#FBBF24', '#F59E0B'],
-    offset: 0.985,
+    offset: 0.985,   // TODO: 校准「0 拍」对应的真实秒数
+    // TODO: 自行编写谱面，替换下方占位 idle 段
     segments: [
       { type: 'tutorial', beatStart: -0.5,   beatEnd: 7.5, notes: [0, 2, 4, 6] ,message:"记住节奏～"},
       { type: 'play',     beatStart: 7.5,   beatEnd: 15.5,   notes: [8, 10, 12, 14], playMode: 1 },
@@ -251,16 +251,16 @@ const SONGS = [
   },
   {
     id: 'stay',
-    chartVersion: 'stay-v1',
     title: 'Stay Fere Forever',
     artist: 'Jewel',
     cover: 'assets/covers/stay.jpeg',
     audio: 'assets/audio/stay.mp3',
-    bpm: 88,
-    duration: 65,
+    bpm: 88,           // TODO: 填写 BPM
+    duration: 65,      // TODO: 填写歌曲时长（秒）
     difficulty: '中等',
     color: ['#F472B6', '#818CF8'],
-    offset: 0.158,
+    offset: 0.158,        // TODO: 0 拍位置对应的真实时间（秒）
+    // TODO: 填写谱面段落（参考其它歌曲格式）
     segments: [
       { type: 'tutorial', beatStart: -0.5,   beatEnd: 3.5, notes: [0, 1, 2, 3] ,message:"记住节奏～"},
       { type: 'play',     beatStart: 3.5,   beatEnd: 7.5,   notes: [4, 5, 6, 7], playMode: 1 },  
@@ -284,16 +284,15 @@ const SONGS = [
   },
   {
     id: 'jinli',
-    chartVersion: 'jinli-v1',
     title: '锦鲤抄',
     artist: '银临·云之泣',
     cover: 'assets/covers/jinli.jpeg',
     audio: 'assets/audio/jinli.mp3',
-    bpm: 175,
-    duration: 90,
+    bpm: 175,           // TODO: 填写 BPM
+    duration: 90,      // TODO: 填写歌曲时长（秒）
     difficulty: '简单·三拍子',
     color: ['#FBBF77', '#F472B6'],
-    offset: 1.8,
+    offset: 1.8,        // TODO: 0 拍位置对应的真实时间（秒）
     segments: [
       { type: 'tutorial', beatStart: -1,   beatEnd: 11.5, notes: [0, 3, 6, 9] ,message:"记住节奏～"},
       { type: 'play',     beatStart: 11,   beatEnd: 23.5,   notes: [12, 15, 18, 21], playMode: 1 }, 
@@ -307,6 +306,7 @@ const SONGS = [
       { type: 'play',     beatStart: 107,   beatEnd: 119.5, notes: [108, 109, 111, 112, 114, 115, 117, 118], playMode: 2 }, 
       { type: 'tutorial', beatStart: 119,   beatEnd: 131.5, notes: [120, 123, 124, 125, 126, 130, 131] },
       { type: 'play',     beatStart: 131,   beatEnd: 143.5, notes: [132, 135, 136, 137, 138, 142, 143], playMode: 2 }, 
+      // TODO: 填写谱面段落
       { type: 'tutorial', beatStart: 143,   beatEnd: 149.5, notes: [144, 147, 148, 149] },
       { type: 'play',     beatStart: 149,   beatEnd: 155.5, notes: [150, 153, 154, 155], playMode: 2 }, 
       { type: 'tutorial', beatStart: 155,   beatEnd: 161.5, notes: [156, 159, 160, 161] },
