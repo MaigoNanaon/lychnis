@@ -14,7 +14,7 @@ class RhythmGame {
     this.audio = audioEngine;
     this.duration = duration;
     this.callbacks = callbacks;
-    this.audioOffset = -70;
+    this.audioOffset = -80;
 
     this.score = 0;
     this.combo = 0;
@@ -197,9 +197,9 @@ class RhythmGame {
   _judge(note, diff, seg) {
     const absDiff = Math.abs(diff);
     let result;
-    if (absDiff <= 50) { result = 'perfect'; this.score += 100 + this.combo * 2; this.perfectCount++; }
-    else if (absDiff <= 100) { result = 'great'; this.score += 70 + this.combo; this.greatCount++; }
-    else if (absDiff <= 150) { result = 'good'; this.score += 40; this.goodCount++; }
+    if (absDiff <= 75) { result = 'perfect'; this.score += 100 + this.combo * 2; this.perfectCount++; }
+    else if (absDiff <= 125) { result = 'great'; this.score += 70 + this.combo; this.greatCount++; }
+    else if (absDiff <= 175) { result = 'good'; this.score += 40; this.goodCount++; }
     else { result = 'miss'; this.missCount++; }
 
     if (result !== 'miss') { this.combo++; if (this.combo > this.maxCombo) this.maxCombo = this.combo; }
@@ -450,7 +450,7 @@ class RhythmGame {
         const playMode = vs.playMode || 1;
         let opacity = 1;
         if (vs.type === 'play' && vs._ratio >= 0 && vs._ratio <= 1) {
-          if (playMode === 2) opacity = Math.max(0, 1 - vs._ratio * 2.5);
+          if (playMode === 2) opacity = Math.max(0, 1 - vs._ratio * 2);
           else if (playMode === 3) opacity = 0;
         }
         sl.style.opacity = opacity;
