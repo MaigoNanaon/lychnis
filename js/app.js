@@ -413,7 +413,7 @@
   function openDuelGame() {
     exitDuelGame(false);
     state.mode = 'shadow-duel';
-    state.duelPhase = 'playing';
+    state.duelPhase = 'preparing';
     state.duelResult = null;
     $('#duel-game-song-title').textContent = state.currentSong.title;
     $('#duel-game-shadow-name').textContent = state.matchedShadow.profile.name;
@@ -426,14 +426,17 @@
     $('#duel-score-diff').textContent = '分差 0';
     $('#duel-progress-bar').style.width = '0%';
     $('#duel-pause-overlay').classList.remove('show');
+    $('#duel-start-overlay').classList.add('show');
     applyCoverTheme(state.currentSong);
     showPage('duelGame');
 
-    const segments = compileChart(state.currentSong);
+    const segments = prepareDuelVisualSegments(state.currentSong);
     const shadowRenderer = new DuelLaneRenderer($('#duel-shadow-stage'), segments, 'shadow');
     const playerRenderer = new DuelLaneRenderer($('#duel-player-stage'), segments, 'player');
     shadowRenderer.init();
     playerRenderer.init();
+    shadowRenderer.update(0);
+    playerRenderer.update(0);
     state.duelRenderers = { shadow: shadowRenderer, player: playerRenderer };
 
     state.duelGame = new DuelGame(state.currentSong, state.matchedShadow, state.audio, {
@@ -465,6 +468,12 @@
       }
     });
     state.duelGame.init();
+  }
+
+  function startPreparedDuel() {
+    if (!state.duelGame || state.duelGame.phase !== 'idle') return;
+    $('#duel-start-overlay').classList.remove('show');
+    state.duelPhase = 'playing';
     state.duelGame.start();
   }
 
@@ -481,6 +490,8 @@
       state.duelRenderers = null;
     }
     state.audio.stop();
+    $('#duel-start-overlay').classList.remove('show');
+    $('#duel-pause-overlay').classList.remove('show');
     if (returnToOpponent && state.matchedShadow) {
       state.duelPhase = 'opponent-ready';
       showPage('duelOpponent');
@@ -917,6 +928,7 @@
       if (state.duelGame && state.duelGame.phase === 'playing') state.duelGame.tap();
     });
     $('#duel-resume-btn').addEventListener('click', resumeDuelFromOverlay);
+    $('#duel-start-confirm-btn').addEventListener('click', startPreparedDuel);
     $('#duel-retry-btn').addEventListener('click', openDuelGame);
     $('#duel-result-rematch-btn').addEventListener('click', startShadowMatch);
     $('#duel-result-home-btn').addEventListener('click', returnDuelHome);

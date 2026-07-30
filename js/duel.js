@@ -313,42 +313,104 @@ class DuelLaneRenderer {
     this.segments = segments;
     this.role = role;
     this.activeSegmentIndex = -1;
+    this.label = null;
     this.track = null;
     this.notesLayer = null;
-    this.scanline = null;
+    this.scanlines = [];
+    this.demoHits = new Set();
   }
 
   init() {
     this.container.innerHTML = '';
+    this.label = document.createElement('div');
+    this.label.className = 'duel-seg-label label-idle';
+    this.label.textContent = '准备...';
+    this.container.appendChild(this.label);
+
     this.track = document.createElement('div');
     this.track.className = `game-track duel-track duel-track-${this.role}`;
     this.notesLayer = document.createElement('div');
     this.notesLayer.className = 'track-notes';
-    this.scanline = document.createElement('div');
-    this.scanline.className = 'track-scanline';
     this.track.appendChild(this.notesLayer);
-    this.track.appendChild(this.scanline);
+    this.scanlines = [this._createScanline(), this._createScanline()];
+    this.scanlines.forEach(scanline => this.track.appendChild(scanline));
     this.container.appendChild(this.track);
   }
 
   update(currentTime) {
     const segment = this._findSegmentAt(currentTime);
     if (!segment) {
-      this.scanline.style.display = 'none';
+      this.scanlines.forEach(scanline => { scanline.style.display = 'none'; });
+      const firstSegment = this.segments[0];
+      const lastSegment = this.segments[this.segments.length - 1];
+      if (firstSegment && currentTime < firstSegment.start) {
+        this._setLabel('准备...', 'label-idle');
+      } else if (lastSegment && currentTime >= lastSegment.end) {
+        this._setLabel('辛苦了～好棒呀', 'label-idle');
+      }
       return;
     }
 
     if (segment._index !== this.activeSegmentIndex) {
       this.activeSegmentIndex = segment._index;
-      this.notesLayer.innerHTML = '';
+      if (segment.type === 'tutorial' || segment.type === 'idle') {
+        this.notesLayer.innerHTML = '';
+      }
     }
 
+    this._updateLabel(segment);
+    this._updateTrackStyle(segment, currentTime);
+    this._renderTutorialNotes(segment, currentTime);
+    this._positionScanlines(this._findVisibleScanSegments(currentTime));
+  }
+
+  _updateLabel(segment) {
+    if (segment.type === 'tutorial') {
+      this._setLabel(segment.message || '记住节奏！', 'label-tutorial');
+    } else if (segment.type === 'play') {
+      this._setLabel(this.role === 'shadow' ? '影子出手！' : '轮到你打！', 'label-play');
+    } else {
+      this._setLabel(segment.message || '休息一下～', 'label-idle');
+    }
+  }
+
+  _setLabel(text, className) {
+    this.label.textContent = text;
+    this.label.className = `duel-seg-label ${className}`;
+  }
+
+  _updateTrackStyle(segment, currentTime) {
     const duration = segment.end - segment.start;
     const ratio = duration > 0 ? (currentTime - segment.start) / duration : 0;
-    this.scanline.style.display = 'block';
-    this.scanline.style.left = `${Math.max(0, Math.min(100, ratio * 100))}%`;
     this.track.classList.toggle('is-scoring', segment.type === 'play');
     this.track.classList.toggle('is-resting', segment.type !== 'play');
+    this.track.classList.toggle('is-tutorial', segment.type === 'tutorial');
+
+    if (segment.type === 'tutorial') {
+      const alpha = 0.06 + Math.max(0, Math.min(1, ratio)) * 0.12;
+      this.track.style.background = `rgba(94, 234, 212, ${alpha})`;
+      this.track.style.borderColor = 'rgba(94, 234, 212, 0.45)';
+      this.track.style.boxShadow = '0 0 18px rgba(94, 234, 212, 0.16)';
+    } else if (segment.type === 'idle') {
+      this.track.style.background = 'rgba(255, 255, 255, 0.03)';
+      this.track.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+      this.track.style.boxShadow = 'none';
+    }
+  }
+
+  _renderTutorialNotes(segment, currentTime) {
+    if (segment.type !== 'tutorial') return;
+    segment.notes.forEach(noteTime => {
+      const key = `${segment._index}:${noteTime}`;
+      if (noteTime > currentTime || this.demoHits.has(key)) return;
+      this.demoHits.add(key);
+      const ratio = (noteTime - segment.start) / (segment.end - segment.start);
+      const dot = document.createElement('div');
+      dot.className = 'dot tutorial-dot duel-tutorial-dot';
+      dot.style.left = `${Math.max(0, Math.min(100, ratio * 100))}%`;
+      this.notesLayer.appendChild(dot);
+      this._renderFeedback(noteTime, segment, 'demo');
+    });
   }
 
   renderJudge(judgeInfo) {
@@ -360,10 +422,14 @@ class DuelLaneRenderer {
     dot.className = `dot player-dot duel-dot duel-dot-${judgeInfo.result}`;
     dot.style.left = `${Math.max(0, Math.min(100, ratio * 100))}%`;
     this.notesLayer.appendChild(dot);
+    this._renderFeedback(renderTime, segment, judgeInfo.result);
+  }
 
+  _renderFeedback(renderTime, segment, result) {
+    const ratio = (renderTime - segment.start) / (segment.end - segment.start);
     const text = document.createElement('div');
-    text.className = `duel-judge duel-judge-${judgeInfo.result}`;
-    text.textContent = this._getJudgeText(judgeInfo.result);
+    text.className = `duel-judge duel-judge-${result}`;
+    text.textContent = result === 'demo' ? '打!' : this._getJudgeText(result);
     text.style.left = `${Math.max(0, Math.min(100, ratio * 100))}%`;
     this.container.appendChild(text);
     setTimeout(() => text.remove(), 760);
@@ -372,6 +438,42 @@ class DuelLaneRenderer {
   destroy() {
     this.container.innerHTML = '';
     this.activeSegmentIndex = -1;
+    this.demoHits.clear();
+  }
+
+  _createScanline() {
+    const scanline = document.createElement('div');
+    scanline.className = 'track-scanline';
+    scanline.style.display = 'none';
+    return scanline;
+  }
+
+  _findVisibleScanSegments(currentTime) {
+    return this.segments.map((segment, index) => {
+      const duration = segment.end - segment.start;
+      const ratio = duration > 0 ? (currentTime - segment.start) / duration : -1;
+      return { ...segment, _index: index, _ratio: ratio, _position: ratio * 100 };
+    }).filter(segment => segment._position >= -10 && segment._position <= 110);
+  }
+
+  _positionScanlines(visibleSegments) {
+    this.scanlines.forEach((scanline, index) => {
+      const segment = visibleSegments[index];
+      if (!segment) {
+        scanline.style.display = 'none';
+        return;
+      }
+
+      scanline.style.display = 'block';
+      scanline.style.left = `${segment._position}%`;
+      let opacity = 1;
+      const playMode = segment.playMode || 1;
+      if (segment.type === 'play' && segment._ratio >= 0 && segment._ratio <= 1) {
+        if (playMode === 2) opacity = Math.max(0, 1 - segment._ratio * 2.5);
+        if (playMode === 3) opacity = 0;
+      }
+      scanline.style.opacity = opacity;
+    });
   }
 
   _findSegmentAt(time) {
@@ -385,4 +487,23 @@ class DuelLaneRenderer {
   _getJudgeText(result) {
     return { perfect: 'Q!', great: '好', good: '嗯', miss: '呀!', what: '诶?' }[result] || result;
   }
+}
+
+function prepareDuelVisualSegments(song) {
+  const compiledSegments = compileChart(song);
+  return compiledSegments.map((segment, index) => {
+    const validNotes = (segment.notes || []).filter(time => time >= segment.start && time <= segment.end);
+    if (validNotes.length > 0 || segment.type === 'idle') {
+      return { ...segment, notes: validNotes };
+    }
+
+    const rawSegment = song.segments[index];
+    if (!rawSegment || rawSegment.beatStart == null) return { ...segment, notes: validNotes };
+    const unit = beatMs(song.bpm);
+    const offsetMs = (song.offset || 0) * 1000;
+    const mappedNotes = (rawSegment.notes || []).map(note => (
+      Math.round(offsetMs + (rawSegment.beatStart + note) * unit)
+    )).filter(time => time >= segment.start && time <= segment.end);
+    return { ...segment, notes: mappedNotes };
+  });
 }
