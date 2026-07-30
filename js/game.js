@@ -570,7 +570,7 @@ class RhythmGame {
       // 从第一个 play 段切走时显示「好！」
       if (this._lastSegIndex === this._firstPlayIndex && !this._firstPlayEnded) {
         this._firstPlayEnded = true;
-        this._showPraise('Qute🫰！');
+        this._showPraise('Qute🫰！', 1800);
       }
       this._lastSegIndex = seg._index;
     }

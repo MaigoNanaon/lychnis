@@ -75,7 +75,7 @@ const SONGS = [
     artist: '（翻唱。原作：羽生迷子）',
     cover: 'assets/covers/harehareya.jpg',
     audio: 'assets/audio/harehareya.mp3',
-    bpm: 91,
+    bpm: 92,
     duration: 208,
     difficulty: '简单',
     color: ['#38BDF8', '#0EA5E9'],
@@ -83,12 +83,12 @@ const SONGS = [
     // —— 新格式：每个 seg 单独定义，单位 beat（1 四分音符 = 1 拍） ——
     // 音符只在 [1, 1.5, 3.5] 拍；play 段 playMode 在 1 / 3 间交替。
     segments: [
-      { type: 'tutorial', beatStart: 0,   beatEnd: 4,   notes: [1, 1.5, 3.5], message: '听好这段节奏～' },
-      { type: 'play',     beatStart: 4,   beatEnd: 8,   notes: [1, 1.5, 3.5], playMode: 1 },
-      { type: 'tutorial', beatStart: 8,   beatEnd: 12,  notes: [1, 1.5, 3.5] },
-      { type: 'play',     beatStart: 12,  beatEnd: 16,  notes: [1, 1.5, 3.5], playMode: 3 },
-      { type: 'tutorial', beatStart: 16,  beatEnd: 20,  notes: [1, 1.5, 3.5] },
-      { type: 'play',     beatStart: 20,  beatEnd: 24,  notes: [1, 1.5, 3.5], playMode: 1 },
+      { type: 'tutorial', beatStart: -0.5,   beatEnd: 3.5,   notes: [0, 2], message:"记住节奏～"},
+      { type: 'play',     beatStart: 3.5,   beatEnd: 7.5,   notes: [4, 6 ], playMode: 1 },
+      { type: 'tutorial', beatStart: 7.5,   beatEnd: 11.5,  notes: [8, 9, 10, 11] },
+      { type: 'play',     beatStart: 11.5,  beatEnd: 15.5,  notes: [12, 13, 14, 15], playMode: 2 },
+      { type: 'tutorial', beatStart: 15.5,   beatEnd: 19.5,  notes: [8, 9, 10, 11] },
+      { type: 'play',     beatStart: 11.5,  beatEnd: 15.5,  notes: [12, 13, 14, 15], playMode: 2 , message:"扫描线消失！"},
       { type: 'tutorial', beatStart: 24,  beatEnd: 28,  notes: [1, 1.5, 3.5] },
       { type: 'play',     beatStart: 28,  beatEnd: 32,  notes: [1, 1.5, 3.5], playMode: 3 },
       { type: 'tutorial', beatStart: 32,  beatEnd: 36,  notes: [1, 1.5, 3.5] },
@@ -149,7 +149,7 @@ const SONGS = [
     difficulty: '困难',
     color: ['#A78BFA', '#8B5CF6'],
     segments: [
-      { type: 'tutorial', beatStart: -0.5,   beatEnd: 7.5,   notes: [0, 1, 2, 3, 4, 5, 6, 7] },
+      { type: 'tutorial', beatStart: -0.5,   beatEnd: 7.5,   notes: [0, 1, 2, 3, 4, 5, 6, 7] ,message:"记住节奏～"},
       { type: 'play',     beatStart: 7.5,   beatEnd: 15.5,   notes: [8, 9, 10, 11, 12, 13, 14, 15], playMode: 1 },
       { type: 'tutorial', beatStart: 15.5,   beatEnd: 23.5,   notes: [16, 17, 18, 19, 20, 21, 22, 22.5, 23] },
       { type: 'play',     beatStart: 23.5,   beatEnd: 31.5,   notes: [24, 25, 26, 27, 28, 29, 30, 30.5, 31], playMode: 1 },
@@ -226,7 +226,7 @@ const SONGS = [
     offset: 0.985,   // TODO: 校准「0 拍」对应的真实秒数
     // TODO: 自行编写谱面，替换下方占位 idle 段
     segments: [
-      { type: 'tutorial', beatStart: -0.5,   beatEnd: 7.5, notes: [0, 2, 4, 6] },
+      { type: 'tutorial', beatStart: -0.5,   beatEnd: 7.5, notes: [0, 2, 4, 6] ,message:"记住节奏～"},
       { type: 'play',     beatStart: 7.5,   beatEnd: 15.5,   notes: [8, 10, 12, 14], playMode: 1 },
       { type: 'tutorial', beatStart: 15.5,   beatEnd: 23.5, notes: [16, 18, 20, 22, 23] },
       { type: 'play',     beatStart: 23.5,   beatEnd: 31.5,   notes: [24, 26, 28, 30, 31], playMode: 1 },
@@ -277,7 +277,7 @@ const SONGS = [
     offset: 0.158,        // TODO: 0 拍位置对应的真实时间（秒）
     // TODO: 填写谱面段落（参考其它歌曲格式）
     segments: [
-      { type: 'tutorial', beatStart: -0.5,   beatEnd: 3.5, notes: [0, 1, 2, 3] },
+      { type: 'tutorial', beatStart: -0.5,   beatEnd: 3.5, notes: [0, 1, 2, 3] ,message:"记住节奏～"},
       { type: 'play',     beatStart: 3.5,   beatEnd: 7.5,   notes: [4, 5, 6, 7], playMode: 1 },  
       { type: 'tutorial', beatStart: 7.5,   beatEnd: 11.5, notes: [8,8.5, 10, 10.5] },
       { type: 'play',     beatStart: 11.5,   beatEnd: 15.5,   notes: [12, 12.5, 14, 14.5], playMode: 1 },  
@@ -309,7 +309,7 @@ const SONGS = [
     color: ['#FBBF77', '#F472B6'],
     offset: 1.8,        // TODO: 0 拍位置对应的真实时间（秒）
     segments: [
-      { type: 'tutorial', beatStart: -1,   beatEnd: 11.5, notes: [0, 3, 6, 9] },
+      { type: 'tutorial', beatStart: -1,   beatEnd: 11.5, notes: [0, 3, 6, 9] ,message:"记住节奏～"},
       { type: 'play',     beatStart: 11,   beatEnd: 23.5,   notes: [12, 15, 18, 21], playMode: 1 }, 
       { type: 'tutorial', beatStart: 23,   beatEnd: 35.5, notes: [24, 25, 26, 30, 31, 32] },
       { type: 'play',     beatStart: 35,   beatEnd: 47.5, notes: [36, 37, 38, 42, 43, 44], playMode: 1 }, 
