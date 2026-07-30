@@ -14,7 +14,8 @@ class RhythmGame {
     this.audio = audioEngine;
     this.duration = duration;
     this.callbacks = callbacks;
-    this.audioOffset = -80;
+this.audioOffset = -70;
+    this.judgeEngine = new JudgeEngine();
 
     this.score = 0;
     this.combo = 0;
@@ -184,32 +185,24 @@ class RhythmGame {
   }
 
   _wrongTap(time, seg) {
-    this.score = Math.max(0, this.score - 20);
-    this.combo = 0;
+    const judgeInfo = this.judgeEngine.wrongTap();
+    this._syncJudgeStats();
     const wrongTexts = ['诶?', '不!'];
     const text = wrongTexts[Math.floor(Math.random() * wrongTexts.length)];
     this._addJudgeText(time, seg, text, '#FB7185');
     if (this.callbacks.onJudge) {
-      this.callbacks.onJudge({ result: 'what', combo: 0, score: this.score });
+      this.callbacks.onJudge(judgeInfo);
     }
   }
 
   _judge(note, diff, seg) {
-    const absDiff = Math.abs(diff);
-    let result;
-    if (absDiff <= 75) { result = 'perfect'; this.score += 100 + this.combo * 2; this.perfectCount++; }
-    else if (absDiff <= 125) { result = 'great'; this.score += 70 + this.combo; this.greatCount++; }
-    else if (absDiff <= 175) { result = 'good'; this.score += 40; this.goodCount++; }
-    else { result = 'miss'; this.missCount++; }
-
-    if (result !== 'miss') { this.combo++; if (this.combo > this.maxCombo) this.maxCombo = this.combo; }
-    else this.combo = 0;
+const judgeInfo = this.judgeEngine.judge(diff);
+    const result = judgeInfo.result;
+    this._syncJudgeStats();
 
     note.judged = true;
     note.judgeResult = result;
     note.judgeTime = performance.now();
-    this.judgeCount++;
-
     this._addJudgeText(note.time, seg, this._judgeText(result), this._resultColor(result), this._judgeSize(result));
 
     // 若该 note 是此 play 段的最后一个，且整段全部打成了 Perfect：
@@ -221,7 +214,7 @@ class RhythmGame {
     }
 
     if (this.callbacks.onJudge) {
-      this.callbacks.onJudge({ result, combo: this.combo, score: this.score });
+      this.callbacks.onJudge(judgeInfo);
     }
     return result;
   }
@@ -272,15 +265,10 @@ class RhythmGame {
   }
 
   _calcAccuracy() {
-    if (this.totalNotes === 0) return 0;
-    const weight = this.perfectCount * 1 + this.greatCount * 0.7 + this.goodCount * 0.4;
-    return Math.round((weight / this.totalNotes) * 1000) / 10;
+    return this.judgeEngine.getAccuracy();
   }
 
   _reset() {
-    this.score = 0; this.combo = 0; this.maxCombo = 0;
-    this.perfectCount = 0; this.greatCount = 0; this.goodCount = 0;
-    this.missCount = 0; this.judgeCount = 0;
     this.judgeTexts = [];
     this.tutorialDots = [];
     this.playerDots = [];
@@ -296,11 +284,24 @@ class RhythmGame {
     this.totalNotes = this.segments
       .filter(s => s.type === 'play')
       .reduce((sum, s) => sum + s.notes.length, 0);
+    this.judgeEngine.reset(this.totalNotes);
+    this._syncJudgeStats();
 
     this._firstPlayIndex = this.segments.findIndex(s => s.type === 'play');
     this._firstPlayEnded = false;
     this._firstTutorialIndex = this.segments.findIndex(s => s.type === 'tutorial');
     this._turnShown = false;
+  }
+
+  _syncJudgeStats() {
+    this.score = this.judgeEngine.score;
+    this.combo = this.judgeEngine.combo;
+    this.maxCombo = this.judgeEngine.maxCombo;
+    this.perfectCount = this.judgeEngine.perfectCount;
+    this.greatCount = this.judgeEngine.greatCount;
+    this.goodCount = this.judgeEngine.goodCount;
+    this.missCount = this.judgeEngine.missCount;
+    this.judgeCount = this.judgeEngine.judgeCount;
   }
 
   // ============================================
