@@ -71,6 +71,7 @@ function compileChart(song) {
 const SONGS = [
   {
     id: 'harehareya',
+    chartVersion: 'harehareya-v1',
     title: 'ハレハレヤ',
     artist: '（翻唱。原作：羽生迷子）',
     cover: 'assets/covers/harehareya.jpg',
@@ -139,6 +140,7 @@ const SONGS = [
   },
   {
     id: 'snowjam',
+    chartVersion: 'snowjam-v1',
     title: 'Snow Jam',
     artist: '（翻唱。原作：Rin音）',
     cover: 'assets/covers/snowjam.jpg',
@@ -200,6 +202,7 @@ const SONGS = [
   },
   {
     id: 'subobjective',
+    chartVersion: 'subobjective-v1',
     title: 'sub/objective',
     artist: '（翻唱。原作：たなか）',
     cover: 'assets/covers/subobjective.png',
@@ -249,6 +252,7 @@ const SONGS = [
   },
   {
     id: 'yuureitokyo',
+    chartVersion: 'yuureitokyo-v1',
     title: '幽霊東京',
     artist: 'Yuu. 翻唱自 初音ミク',
     cover: 'assets/covers/yuureitokyo.png',
@@ -325,6 +329,7 @@ const SONGS = [
   },
   {
     id: 'qingtian',
+    chartVersion: 'qingtian-v1',
     title: '晴天',
     artist: '周杰伦',
     cover: 'assets/covers/晴天.jpeg',
