@@ -14,7 +14,7 @@ class RhythmGame {
     this.audio = audioEngine;
     this.duration = duration;
     this.callbacks = callbacks;
-    this.audioOffset = -70;
+this.audioOffset = -70;
     this.judgeEngine = new JudgeEngine();
 
     this.score = 0;
@@ -196,7 +196,7 @@ class RhythmGame {
   }
 
   _judge(note, diff, seg) {
-    const judgeInfo = this.judgeEngine.judge(diff);
+const judgeInfo = this.judgeEngine.judge(diff);
     const result = judgeInfo.result;
     this._syncJudgeStats();
 
@@ -451,7 +451,7 @@ class RhythmGame {
         const playMode = vs.playMode || 1;
         let opacity = 1;
         if (vs.type === 'play' && vs._ratio >= 0 && vs._ratio <= 1) {
-          if (playMode === 2) opacity = Math.max(0, 1 - vs._ratio * 2.5);
+          if (playMode === 2) opacity = Math.max(0, 1 - vs._ratio * 2);
           else if (playMode === 3) opacity = 0;
         }
         sl.style.opacity = opacity;
@@ -571,7 +571,7 @@ class RhythmGame {
       // 从第一个 play 段切走时显示「好！」
       if (this._lastSegIndex === this._firstPlayIndex && !this._firstPlayEnded) {
         this._firstPlayEnded = true;
-        this._showPraise('Qute🫰！');
+        this._showPraise('Qute🫰！', 1800);
       }
       this._lastSegIndex = seg._index;
     }

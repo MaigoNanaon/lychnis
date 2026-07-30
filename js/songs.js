@@ -76,20 +76,20 @@ const SONGS = [
     artist: '（翻唱。原作：羽生迷子）',
     cover: 'assets/covers/harehareya.jpg',
     audio: 'assets/audio/harehareya.mp3',
-    bpm: 91,
+    bpm: 92,
     duration: 208,
     difficulty: '简单',
     color: ['#38BDF8', '#0EA5E9'],
-    offset: 0,   // 0 拍位置 = 歌曲 0.000 秒
+    offset: 0.71,   // 0 拍位置 = 歌曲 0.000 秒
     // —— 新格式：每个 seg 单独定义，单位 beat（1 四分音符 = 1 拍） ——
     // 音符只在 [1, 1.5, 3.5] 拍；play 段 playMode 在 1 / 3 间交替。
     segments: [
-      { type: 'tutorial', beatStart: 0,   beatEnd: 4,   notes: [1, 1.5, 3.5], message: '听好这段节奏～' },
-      { type: 'play',     beatStart: 4,   beatEnd: 8,   notes: [1, 1.5, 3.5], playMode: 1 },
-      { type: 'tutorial', beatStart: 8,   beatEnd: 12,  notes: [1, 1.5, 3.5] },
-      { type: 'play',     beatStart: 12,  beatEnd: 16,  notes: [1, 1.5, 3.5], playMode: 3 },
-      { type: 'tutorial', beatStart: 16,  beatEnd: 20,  notes: [1, 1.5, 3.5] },
-      { type: 'play',     beatStart: 20,  beatEnd: 24,  notes: [1, 1.5, 3.5], playMode: 1 },
+      { type: 'tutorial', beatStart: -0.5,   beatEnd: 3.5,   notes: [0, 2], message:"记住节奏～"},
+      { type: 'play',     beatStart: 3.5,   beatEnd: 7.5,   notes: [4, 6 ], playMode: 1 },
+      { type: 'tutorial', beatStart: 7.5,   beatEnd: 11.5,  notes: [8, 9, 10, 11] },
+      { type: 'play',     beatStart: 11.5,  beatEnd: 15.5,  notes: [12, 13, 14, 15], playMode: 2 },
+      { type: 'tutorial', beatStart: 15.5,   beatEnd: 19.5,  notes: [8, 9, 10, 11] },
+      { type: 'play',     beatStart: 11.5,  beatEnd: 15.5,  notes: [12, 13, 14, 15], playMode: 2 , message:"扫描线消失！"},
       { type: 'tutorial', beatStart: 24,  beatEnd: 28,  notes: [1, 1.5, 3.5] },
       { type: 'play',     beatStart: 28,  beatEnd: 32,  notes: [1, 1.5, 3.5], playMode: 3 },
       { type: 'tutorial', beatStart: 32,  beatEnd: 36,  notes: [1, 1.5, 3.5] },
@@ -263,7 +263,7 @@ const SONGS = [
     difficulty: '困难',
     color: ['#A78BFA', '#8B5CF6'],
     segments: [
-      { type: 'tutorial', beatStart: -0.5,   beatEnd: 7.5,   notes: [0, 1, 2, 3, 4, 5, 6, 7] },
+      { type: 'tutorial', beatStart: -0.5,   beatEnd: 7.5,   notes: [0, 1, 2, 3, 4, 5, 6, 7] ,message:"记住节奏～"},
       { type: 'play',     beatStart: 7.5,   beatEnd: 15.5,   notes: [8, 9, 10, 11, 12, 13, 14, 15], playMode: 1 },
       { type: 'tutorial', beatStart: 15.5,   beatEnd: 23.5,   notes: [16, 17, 18, 19, 20, 21, 22, 22.5, 23] },
       { type: 'play',     beatStart: 23.5,   beatEnd: 31.5,   notes: [24, 25, 26, 27, 28, 29, 30, 30.5, 31], playMode: 1 },
@@ -334,14 +334,14 @@ const SONGS = [
     artist: '周杰伦',
     cover: 'assets/covers/晴天.jpeg',
     audio: 'assets/audio/晴天.mp3',
-    bpm: 137.2,
+    bpm: 137.1,
     duration: 145,
     difficulty: '中等',
     color: ['#FBBF24', '#F59E0B'],
-    offset: 0.98,   // TODO: 校准「0 拍」对应的真实秒数
+    offset: 0.985,   // TODO: 校准「0 拍」对应的真实秒数
     // TODO: 自行编写谱面，替换下方占位 idle 段
     segments: [
-      { type: 'tutorial', beatStart: -0.5,   beatEnd: 7.5, notes: [0, 2, 4, 6] },
+      { type: 'tutorial', beatStart: -0.5,   beatEnd: 7.5, notes: [0, 2, 4, 6] ,message:"记住节奏～"},
       { type: 'play',     beatStart: 7.5,   beatEnd: 15.5,   notes: [8, 10, 12, 14], playMode: 1 },
       { type: 'tutorial', beatStart: 15.5,   beatEnd: 23.5, notes: [16, 18, 20, 22, 23] },
       { type: 'play',     beatStart: 23.5,   beatEnd: 31.5,   notes: [24, 26, 28, 30, 31], playMode: 1 },
@@ -367,8 +367,93 @@ const SONGS = [
       { type: 'play',     beatStart: 215.5,  beatEnd: 223.5,   notes: [217, 218, 219, 221, 222, 222.5, 223], playMode: 2 },
       { type: 'tutorial', beatStart: 223.5,  beatEnd: 231.5, notes: [225, 226, 227, 229, 230, 231] },
       { type: 'play',     beatStart: 231.5,  beatEnd: 239.5,   notes: [233, 234, 235, 237, 238, 239], playMode: 2 },
-      { type: 'tutorial', beatStart: 239.5,  beatEnd: 247.5, notes: [240, 241, 242, 243, 230, 231] },
-      { type: 'play',     beatStart: 247.5,  beatEnd: 255.5,   notes: [248, 234, 235, 237, 238, 239], playMode: 2 },
+      { type: 'tutorial', beatStart: 239.5,  beatEnd: 247.5, notes: [241, 242, 243, 244, 245.5, 246] },
+      { type: 'play',     beatStart: 247.5,  beatEnd: 255.5,   notes: [249, 250, 251, 252, 253.5, 254], playMode: 2 },
+      { type: 'tutorial', beatStart: 255.5,  beatEnd: 263.5, notes: [257, 258, 259, 261, 262, 263] },
+      { type: 'play',     beatStart: 263.5,  beatEnd: 271.5,   notes: [265, 266, 267, 269, 270, 271], playMode: 2 },
+      { type: 'tutorial', beatStart: 271.5,  beatEnd: 279.5, notes: [273, 274, 275, 277, 278, 278.5, 279] },
+      { type: 'play',     beatStart: 279.5,  beatEnd: 287.5,   notes: [281, 282, 283, 285, 286, 286.5, 287], playMode: 2 },
+      { type: 'tutorial', beatStart: 287.5,  beatEnd: 295.5, notes: [289, 290, 291, 293, 294, 295] },
+      { type: 'play',     beatStart: 295.5,  beatEnd: 303.5,   notes: [297, 298, 299, 301, 302, 303], playMode: 2 },
+      { type: 'tutorial', beatStart: 303.5,  beatEnd: 311.5, notes: [305, 306, 306.5, 307, 308, 310, 311] },
+      { type: 'play',     beatStart: 311.5,  beatEnd: 319.5,   notes: [313, 314, 314.5, 315, 316, 318, 319], playMode: 2 },
+    ]
+  },
+  {
+    id: 'stay',
+    chartVersion: 'stay-v1',
+    title: 'Stay Fere Forever',
+    artist: 'Jewel',
+    cover: 'assets/covers/stay.jpeg',
+    audio: 'assets/audio/stay.mp3',
+    bpm: 88,           // TODO: 填写 BPM
+    duration: 65,      // TODO: 填写歌曲时长（秒）
+    difficulty: '中等',
+    color: ['#F472B6', '#818CF8'],
+    offset: 0.158,        // TODO: 0 拍位置对应的真实时间（秒）
+    // TODO: 填写谱面段落（参考其它歌曲格式）
+    segments: [
+      { type: 'tutorial', beatStart: -0.5,   beatEnd: 3.5, notes: [0, 1, 2, 3] ,message:"记住节奏～"},
+      { type: 'play',     beatStart: 3.5,   beatEnd: 7.5,   notes: [4, 5, 6, 7], playMode: 1 },  
+      { type: 'tutorial', beatStart: 7.5,   beatEnd: 11.5, notes: [8,8.5, 10, 10.5] },
+      { type: 'play',     beatStart: 11.5,   beatEnd: 15.5,   notes: [12, 12.5, 14, 14.5], playMode: 1 },  
+      { type: 'tutorial', beatStart: 15.5,   beatEnd: 23.5, notes: [16, 17, 18, 18.5, 19, 20, 21, 22], message:"难度上升，扫描线消失！" },
+      { type: 'play',     beatStart: 23.5,   beatEnd: 31.5,   notes: [24, 25, 26, 26.5, 27, 28, 29, 30], playMode: 2 },
+      { type: 'tutorial', beatStart: 31.5,   beatEnd: 36.0, notes: [32.5, 33.5, 34, 34.5, 34.75, 35.25, 35.5]},
+      { type: 'play',     beatStart: 35.5,   beatEnd: 40.0,   notes: [36.5, 37.5, 38, 38.5, 38.75, 39.25, 39.5], playMode: 2 },
+      { type: 'tutorial', beatStart: 39.5,   beatEnd: 43.5, notes: [40, 41, 42, 43] },
+      { type: 'play',     beatStart: 43.5,   beatEnd: 47.5,   notes: [44, 45, 46, 47], playMode: 2 }, 
+      { type: 'tutorial', beatStart: 47.5,   beatEnd: 52.0, notes: [48, 49, 49.25, 49.5, 50,] },
+      { type: 'play',     beatStart: 51.5,   beatEnd: 56.0,   notes: [52, 53, 53.25, 53.5, 54], playMode: 2 }, 
+      { type: 'tutorial', beatStart: 55.5,   beatEnd: 60.5, notes: [57, 58, 59, 60] },
+      { type: 'play',     beatStart: 60.5,   beatEnd: 65.5,   notes: [62, 63, 64, 65], playMode: 2 }, 
+      { type: 'tutorial', beatStart: 65.5,   beatEnd: 70.0, notes: [66, 67, 67.25, 67.5, 68, 69, 69.25, 69.5] },
+      { type: 'play',     beatStart: 69.5,   beatEnd: 74.0,   notes: [70, 71, 71.25, 71.5, 72, 73, 73.25, 73.5], playMode: 2 }, 
+      { type: 'tutorial', beatStart: 73.5,   beatEnd: 78.5, notes: [75, 76, 77, 78] },
+      { type: 'play',     beatStart: 78.5,   beatEnd: 83.5,   notes: [80, 81, 82, 83], playMode: 2 }, 
+    ]
+  },
+  {
+    id: 'jinli',
+    chartVersion: 'jinli-v1',
+    title: '锦鲤抄',
+    artist: '银临·云之泣',
+    cover: 'assets/covers/jinli.jpeg',
+    audio: 'assets/audio/jinli.mp3',
+    bpm: 175,           // TODO: 填写 BPM
+    duration: 90,      // TODO: 填写歌曲时长（秒）
+    difficulty: '简单·三拍子',
+    color: ['#FBBF77', '#F472B6'],
+    offset: 1.8,        // TODO: 0 拍位置对应的真实时间（秒）
+    segments: [
+      { type: 'tutorial', beatStart: -1,   beatEnd: 11.5, notes: [0, 3, 6, 9] ,message:"记住节奏～"},
+      { type: 'play',     beatStart: 11,   beatEnd: 23.5,   notes: [12, 15, 18, 21], playMode: 1 }, 
+      { type: 'tutorial', beatStart: 23,   beatEnd: 35.5, notes: [24, 25, 26, 30, 31, 32] },
+      { type: 'play',     beatStart: 35,   beatEnd: 47.5, notes: [36, 37, 38, 42, 43, 44], playMode: 1 }, 
+      { type: 'tutorial', beatStart: 47,   beatEnd: 59.5, notes: [48, 51, 52, 53, 54, 57, 58, 59 ], message:"难度上升，扫描线消失！" },
+      { type: 'play',     beatStart: 59,   beatEnd: 71.5, notes: [60, 63, 64, 65, 66, 69, 70, 71], playMode: 2 }, 
+      { type: 'tutorial', beatStart: 71,   beatEnd: 83.5, notes: [72, 74, 75, 77, 78, 80, 81] },
+      { type: 'play',     beatStart: 83,   beatEnd: 95.5, notes: [84, 86, 87, 89, 90, 92, 93], playMode: 2 }, 
+      { type: 'tutorial', beatStart: 95,   beatEnd: 107.5, notes: [96, 97, 99, 100, 102, 103, 105, 106] },
+      { type: 'play',     beatStart: 107,   beatEnd: 119.5, notes: [108, 109, 111, 112, 114, 115, 117, 118], playMode: 2 }, 
+      { type: 'tutorial', beatStart: 119,   beatEnd: 131.5, notes: [120, 123, 124, 125, 126, 130, 131] },
+      { type: 'play',     beatStart: 131,   beatEnd: 143.5, notes: [132, 135, 136, 137, 138, 142, 143], playMode: 2 }, 
+      // TODO: 填写谱面段落
+      { type: 'tutorial', beatStart: 143,   beatEnd: 149.5, notes: [144, 147, 148, 149] },
+      { type: 'play',     beatStart: 149,   beatEnd: 155.5, notes: [150, 153, 154, 155], playMode: 2 }, 
+      { type: 'tutorial', beatStart: 155,   beatEnd: 161.5, notes: [156, 159, 160, 161] },
+      { type: 'play',     beatStart: 161,   beatEnd: 167.5, notes: [162, 165, 166, 167], playMode: 2 }, 
+      { type: 'tutorial', beatStart: 167,   beatEnd: 173.5, notes: [168, 169, 170, 171] },
+      { type: 'play',     beatStart: 173,   beatEnd: 179.5, notes: [174, 175, 176, 177], playMode: 2 }, 
+      { type: 'tutorial', beatStart: 179,   beatEnd: 185.5, notes: [180, 181, 182, 183] },
+      { type: 'play',     beatStart: 185,   beatEnd: 191.5, notes: [186, 187, 188, 189], playMode: 2 }, 
+      { type: 'idle', beatStart: 191,   beatEnd: 197, message:"继续变难！"},
+      { type: 'tutorial', beatStart: 197,   beatEnd: 209.5, notes: [198, 199.5, 200, 201, 202, 203, 204, 206, 207] },
+      { type: 'play',     beatStart: 209,   beatEnd: 221.5, notes: [210, 211.5, 212, 213, 214, 215, 216, 218, 219], playMode: 2 }, 
+      { type: 'tutorial', beatStart: 221.1,   beatEnd: 233.5, notes: [222, 223, 224, 225, 228, 229, 230, 231, 233] },
+      { type: 'play',     beatStart: 233.1,   beatEnd: 245.5, notes: [234, 235, 236, 237, 240, 241, 242, 243, 245], playMode: 2 }, 
+      { type: 'tutorial', beatStart: 245.1,   beatEnd: 251.5, notes: [246, 247, 248, 249] },
+      { type: 'play',     beatStart: 251.1,   beatEnd: 257.5, notes: [252, 253, 254, 255], playMode: 2 }, 
     ]
   }
 ];
