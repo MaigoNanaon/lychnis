@@ -15,6 +15,7 @@
     matchSessionId: 0,
     matchTimer: null,
     matchDelayResolve: null,
+    matchSong: null,
     matchedShadow: null,
     lastMatchedShadowId: null,
     duelGame: null,
@@ -253,11 +254,9 @@
     });
   }
 
-  function selectMatchedShadow() {
+  function selectMatchedShadow(song) {
     const playerRating = getLocalPlayerRating();
-    const candidates = validateShadowPool()
-      .filter(result => result.valid)
-      .map(result => result.shadow)
+    const candidates = getCompatibleShadows(song.id, song.chartVersion)
       .sort((left, right) => {
         const leftGap = Math.abs(left.profile.rating - playerRating);
         const rightGap = Math.abs(right.profile.rating - playerRating);
@@ -267,21 +266,21 @@
     if (candidates.length > 0) {
       return candidates.find(shadow => shadow.id !== state.lastMatchedShadowId) || candidates[0];
     }
-    const fallbackSong = SONGS.find(song => getDuelTargetNotes(song).length > 0) || SONGS[0];
-    return generateFallbackShadow(fallbackSong, `match-${state.matchSessionId}`);
+    return generateFallbackShadow(song, `match-${state.matchSessionId}-${song.id}`);
   }
 
-  function renderMatchedOpponent(shadow) {
-    const song = getSongById(shadow.songId);
-    if (!song) {
-      showToast('对手曲目不可用，请重新匹配');
+  function renderMatchedOpponent(shadow, song) {
+    const matchesSelectedSong = song
+      && shadow.songId === song.id
+      && shadow.chartVersion === song.chartVersion;
+    if (!matchesSelectedSong) {
+      showToast('对手谱面与当前歌曲不一致，请重新匹配');
       cancelShadowMatch();
       return;
     }
 
     state.matchedShadow = shadow;
     state.lastMatchedShadowId = shadow.id;
-    state.currentSong = song;
     state.duelPhase = 'opponent-ready';
     $('#duel-opponent-avatar').textContent = shadow.profile.name.slice(-1);
     $('#duel-opponent-name').textContent = shadow.profile.name;
@@ -296,10 +295,17 @@
 
   function startShadowMatch() {
     if (state.duelPhase === 'matching') return;
+    if (!state.currentSong) {
+      showToast('请先选择一首歌曲');
+      showPage('library');
+      return;
+    }
     stopPlayer();
     clearMatchTimer();
+    const selectedSong = state.currentSong;
     state.mode = 'shadow-duel';
     state.duelPhase = 'matching';
+    state.matchSong = selectedSong;
     state.matchedShadow = null;
     state.matchSessionId += 1;
     const sessionId = state.matchSessionId;
@@ -309,8 +315,7 @@
     $('.duel-matching-dots').style.display = 'flex';
     showPage('duelMatching');
 
-    const shadow = selectMatchedShadow();
-    const song = getSongById(shadow.songId);
+    const shadow = selectMatchedShadow(selectedSong);
     const minimumDelay = new Promise(resolve => {
       state.matchDelayResolve = resolve;
       state.matchTimer = setTimeout(() => {
@@ -319,9 +324,7 @@
         resolve();
       }, 3000);
     });
-    const audioReady = song
-      ? loadAudioWithTimeout(song).then(() => true).catch(() => false)
-      : Promise.resolve(false);
+    const audioReady = loadAudioWithTimeout(selectedSong).then(() => true).catch(() => false);
 
     Promise.all([minimumDelay, audioReady]).then(([, loaded]) => {
       if (state.matchSessionId !== sessionId || state.duelPhase !== 'matching') return;
@@ -333,7 +336,7 @@
         $('#duel-match-retry-btn').classList.add('show');
         return;
       }
-      renderMatchedOpponent(shadow);
+      renderMatchedOpponent(shadow, selectedSong);
     });
   }
 
@@ -342,9 +345,10 @@
     state.audio.stop();
     state.matchSessionId += 1;
     state.duelPhase = 'home';
+    state.matchSong = null;
     state.matchedShadow = null;
     state.mode = 'solo';
-    showPage('library');
+    showPage(state.currentSong ? 'player' : 'library');
   }
 
   function confirmShadowDuel() {
@@ -918,7 +922,6 @@
   // ============================================
   function bindEvents() {
     // 影子对决匹配
-    $('#shadow-duel-entry-btn').addEventListener('click', startShadowMatch);
     $('#duel-match-cancel-btn').addEventListener('click', cancelShadowMatch);
     $('#duel-match-cancel-secondary-btn').addEventListener('click', cancelShadowMatch);
     $('#duel-match-retry-btn').addEventListener('click', startShadowMatch);
@@ -947,7 +950,8 @@
     });
     $('#btn-play').addEventListener('click', togglePlay);
     $('#btn-stop').addEventListener('click', stopPlayer);
-    $('#game-entry-btn').addEventListener('click', openGame);
+    $('#solo-game-entry-btn').addEventListener('click', openGame);
+    $('#duel-game-entry-btn').addEventListener('click', startShadowMatch);
 
     $('#progress-bar').addEventListener('click', (e) => {
       if (!state.currentSong) return;
