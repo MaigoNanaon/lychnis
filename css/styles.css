@@ -1105,6 +1105,13 @@ body::before {
   animation: praisePop 1.2s ease-out forwards;
 }
 
+/* 常驻显示（idle / tutorial message）：不走闪退动画，停在可见态 */
+.game-praise.persist {
+  animation: none;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
 /* 结束庆祝：整首歌完成后升起的彩色大「Qute！」 */
 .game-finish-qute {
   position: absolute;

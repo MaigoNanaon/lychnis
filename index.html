@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#061826">
+  <meta name="theme-color" content="#0D0D0D">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Q-beat! · 节奏游戏</title>
@@ -16,19 +16,15 @@
 <div id="app">
 
   <!-- ============================================ -->
-  <!-- ============================================ -->
-  <!-- 页面1: 曲库 (lychnis-redesign 视觉风格)     -->
+  <!-- 页面1: 曲库 (lychnis-redesign 视觉风格)       -->
   <!-- ============================================ -->
   <section id="page-library" class="page active">
-    <!-- 主内容区 -->
     <main class="main-content" role="main" style="padding-top: calc(var(--space-600) + var(--safe-top));">
-      <!-- 页面标题区 -->
       <section class="page-header" aria-labelledby="page-title">
         <h1 id="page-title" class="page-title">Q-beat!</h1>
         <p class="page-subtitle">听歌 · 记忆节奏 · 模仿打击</p>
       </section>
 
-      <!-- Tab 筛选栏 -->
       <nav class="tab-bar" role="tablist" aria-label="难度筛选">
         <button class="tab-item active" role="tab" aria-selected="true" data-difficulty="all">
           <span>全部</span>
@@ -44,10 +40,8 @@
         </button>
       </nav>
 
-      <!-- 曲库列表（由 js/app.js 动态渲染） -->
       <section class="song-list" id="song-list" aria-label="曲库列表"></section>
 
-      <!-- 排行榜入口 -->
       <div class="lb-entry">
         <button class="leaderboard-btn" id="lb-entry-btn">
           <span class="leaderboard-icon" aria-hidden="true">
@@ -269,7 +263,7 @@
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
-  <!-- 竖屏旋转提示（仅竖屏时显示，提示用户横屏游玩） -->
+  <!-- 竖屏旋转提示 -->
   <div class="rotate-hint" id="rotate-hint">
     <div class="rotate-hint-icon">📱↻</div>
     <div class="rotate-hint-title">请把手机横过来</div>

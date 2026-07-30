@@ -14,7 +14,7 @@ class RhythmGame {
     this.audio = audioEngine;
     this.duration = duration;
     this.callbacks = callbacks;
-    this.audioOffset = -80;
+    this.audioOffset = -70;
 
     this.score = 0;
     this.combo = 0;
@@ -506,7 +506,7 @@ class RhythmGame {
     };
     const info = labels[seg.type];
     if (info) {
-      this.labelEl.textContent = info.text;
+      this.labelEl.textContent = (seg.message && seg.type !== 'play') ? seg.message : info.text;
       this.labelEl.className = 'game-seg-label ' + info.cls;
     }
 
@@ -557,9 +557,10 @@ class RhythmGame {
     if (seg._index !== this._lastSegIndex) {
       // 进入任何新段时先清空上一段的中央提示（praise 复用，统一管理）
       this._hidePraise();
-      // 进入 tutorial 段：清空轨道点
+      // 进入 tutorial 段：清空轨道点；若有 message 则居中显示
       if (seg.type === 'tutorial') {
         this._clearDots();
+        if (seg.message) this._showPraise(seg.message, 3000);
       }
       // 进入 idle 段：清空轨道点 + 在正中显示自定义 message
       if (seg.type === 'idle') {
@@ -602,15 +603,15 @@ class RhythmGame {
   _showPraise(text, duration) {
     this.praiseEl.textContent = text;
     this.praiseEl.classList.remove('show', 'persist');
+    this.praiseEl.style.animationDuration = '';
     void this.praiseEl.offsetWidth; // 触发重绘以重新播放动画
     if (duration) {
       // 限时弹窗（到你！/好！）：走 praisePop 动画后淡出
       this.praiseEl.style.animationDuration = duration + 'ms';
       this.praiseEl.classList.add('show');
     } else {
-      // 常驻显示（idle message 等）：不闪退，停在可见态
-      this.praiseEl.style.animationDuration = '';
-      this.praiseEl.classList.add('show', 'persist');
+      // 常驻显示（idle/tutorial message）：不走动画，直接显示并保持
+      this.praiseEl.classList.add('persist');
     }
   }
 

@@ -83,7 +83,7 @@ const SONGS = [
     // —— 新格式：每个 seg 单独定义，单位 beat（1 四分音符 = 1 拍） ——
     // 音符只在 [1, 1.5, 3.5] 拍；play 段 playMode 在 1 / 3 间交替。
     segments: [
-      { type: 'tutorial', beatStart: 0,   beatEnd: 4,   notes: [1, 1.5, 3.5] },
+      { type: 'tutorial', beatStart: 0,   beatEnd: 4,   notes: [1, 1.5, 3.5], message: '听好这段节奏～' },
       { type: 'play',     beatStart: 4,   beatEnd: 8,   notes: [1, 1.5, 3.5], playMode: 1 },
       { type: 'tutorial', beatStart: 8,   beatEnd: 12,  notes: [1, 1.5, 3.5] },
       { type: 'play',     beatStart: 12,  beatEnd: 16,  notes: [1, 1.5, 3.5], playMode: 3 },
@@ -250,7 +250,7 @@ const SONGS = [
   {
     id: 'yuureitokyo',
     title: '幽霊東京',
-    artist: '（翻唱。原作：Ayase·初音ミク）',
+    artist: 'Yuu. 翻唱自 初音ミク',
     cover: 'assets/covers/yuureitokyo.png',
     audio: 'assets/audio/yuureitokyo.mp3',
     bpm: 124,
@@ -321,6 +321,49 @@ const SONGS = [
       { type: 'play',     beatStart: 379.5,   beatEnd: 387.5,   notes: [380, 381, 382, 383, 384, 385, 386, 386.5, 387], playMode: 2 },
       { type: 'tutorial', beatStart: 387.5,   beatEnd: 395.5,   notes: [388, 390, 390.75, 391.5]},
       { type: 'play',     beatStart: 395.5,   beatEnd: 403.5,   notes: [396, 398, 398.75, 399.5], playMode: 2 },
+    ]
+  },
+  {
+    id: 'qingtian',
+    title: '晴天',
+    artist: '周杰伦',
+    cover: 'assets/covers/晴天.jpeg',
+    audio: 'assets/audio/晴天.mp3',
+    bpm: 137.2,
+    duration: 145,
+    difficulty: '中等',
+    color: ['#FBBF24', '#F59E0B'],
+    offset: 0.98,   // TODO: 校准「0 拍」对应的真实秒数
+    // TODO: 自行编写谱面，替换下方占位 idle 段
+    segments: [
+      { type: 'tutorial', beatStart: -0.5,   beatEnd: 7.5, notes: [0, 2, 4, 6] },
+      { type: 'play',     beatStart: 7.5,   beatEnd: 15.5,   notes: [8, 10, 12, 14], playMode: 1 },
+      { type: 'tutorial', beatStart: 15.5,   beatEnd: 23.5, notes: [16, 18, 20, 22, 23] },
+      { type: 'play',     beatStart: 23.5,   beatEnd: 31.5,   notes: [24, 26, 28, 30, 31], playMode: 1 },
+      { type: 'tutorial', beatStart: 31.5,   beatEnd: 39.5, notes: [32, 34, 35.5, 37, 38] },
+      { type: 'play',     beatStart: 39.5,   beatEnd: 47.5,   notes: [40, 42, 43.5, 45, 46], playMode: 1 },
+      { type: 'tutorial', beatStart: 47.5,   beatEnd: 55.5, notes: [48, 50, 51.5, 53, 54, 55] },
+      { type: 'play',     beatStart: 55.5,   beatEnd: 63.5,   notes: [56, 58, 59.5, 61, 62, 63], playMode: 1 },
+      { type: 'tutorial', beatStart: 63.5,   beatEnd: 71.5, notes: [65, 66, 67, 68, 70, 71], message:"难度上升，扫描线消失！" },
+      { type: 'play',     beatStart: 71.5,   beatEnd: 79.5,   notes: [73, 74, 75, 76, 78, 79], playMode: 2 },
+      { type: 'tutorial', beatStart: 79.5,   beatEnd: 87.5, notes: [81, 83, 85, 85.5, 86, 87] },
+      { type: 'play',     beatStart: 87.5,   beatEnd: 95.5,   notes: [89, 91, 93, 93.5, 94, 95], playMode: 2 },
+      { type: 'tutorial', beatStart: 95.5,   beatEnd: 111.5, notes: [96, 97, 98, 99, 100, 101, 102, 103, 103.5, 105, 107, 108, 108.5, 109, 110] },
+      { type: 'play',     beatStart: 111.5,  beatEnd: 127.5,   notes: [112, 113, 114, 115, 116, 117, 118, 119, 119.5, 121, 123, 124, 124.5, 125, 126], playMode: 2 },
+      { type: 'tutorial', beatStart: 127.5,   beatEnd: 136.5, notes: [130, 130.75, 131.5, 134, 134.75, 135.5] },
+      { type: 'play',     beatStart: 135.5,  beatEnd: 144.5,   notes: [138, 138.75, 139.5, 142, 142.75, 143.5], playMode: 2 },
+      { type: 'tutorial', beatStart: 143.5,  beatEnd: 151.5, notes: [148, 149, 150, 151] },
+      { type: 'play',     beatStart: 151.5,  beatEnd: 159.5,   notes: [156, 157, 158, 159], playMode: 2 },
+      { type: 'tutorial', beatStart: 159.5,  beatEnd: 175.5, notes: [160, 161, 162, 163, 164, 165, 166, 167, 168, 170, 171.5, 172.5, 173, 174] },
+      { type: 'play',     beatStart: 175.5,  beatEnd: 191.5,   notes: [176, 177, 178, 179, 180, 181, 182, 183, 184, 186, 187.5, 188.5, 189, 190], playMode: 2 },
+      { type: 'tutorial', beatStart: 191.5,  beatEnd: 199.5, notes: [193, 194, 195, 197, 198, 199] },
+      { type: 'play',     beatStart: 199.5,  beatEnd: 207.5,   notes: [201, 202, 203, 205, 206, 207], playMode: 2 },
+      { type: 'tutorial', beatStart: 207.5,  beatEnd: 215.5, notes: [209, 210, 211, 213, 214, 214.5, 215] },
+      { type: 'play',     beatStart: 215.5,  beatEnd: 223.5,   notes: [217, 218, 219, 221, 222, 222.5, 223], playMode: 2 },
+      { type: 'tutorial', beatStart: 223.5,  beatEnd: 231.5, notes: [225, 226, 227, 229, 230, 231] },
+      { type: 'play',     beatStart: 231.5,  beatEnd: 239.5,   notes: [233, 234, 235, 237, 238, 239], playMode: 2 },
+      { type: 'tutorial', beatStart: 239.5,  beatEnd: 247.5, notes: [240, 241, 242, 243, 230, 231] },
+      { type: 'play',     beatStart: 247.5,  beatEnd: 255.5,   notes: [248, 234, 235, 237, 238, 239], playMode: 2 },
     ]
   }
 ];
