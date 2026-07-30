@@ -426,7 +426,9 @@
     $('#duel-score-diff').textContent = '分差 0';
     $('#duel-progress-bar').style.width = '0%';
     $('#duel-pause-overlay').classList.remove('show');
+    $('#duel-pause-overlay').setAttribute('aria-hidden', 'true');
     $('#duel-start-overlay').classList.add('show');
+    $('#duel-start-overlay').setAttribute('aria-hidden', 'false');
     applyCoverTheme(state.currentSong);
     showPage('duelGame');
 
@@ -473,6 +475,7 @@
   function startPreparedDuel() {
     if (!state.duelGame || state.duelGame.phase !== 'idle') return;
     $('#duel-start-overlay').classList.remove('show');
+    $('#duel-start-overlay').setAttribute('aria-hidden', 'true');
     state.duelPhase = 'playing';
     state.duelGame.start();
   }
@@ -492,6 +495,8 @@
     state.audio.stop();
     $('#duel-start-overlay').classList.remove('show');
     $('#duel-pause-overlay').classList.remove('show');
+    $('#duel-start-overlay').setAttribute('aria-hidden', 'true');
+    $('#duel-pause-overlay').setAttribute('aria-hidden', 'true');
     if (returnToOpponent && state.matchedShadow) {
       state.duelPhase = 'opponent-ready';
       showPage('duelOpponent');
@@ -510,11 +515,13 @@
     if (!state.duelGame || state.duelGame.phase !== 'playing') return;
     state.duelGame.pause();
     $('#duel-pause-overlay').classList.add('show');
+    $('#duel-pause-overlay').setAttribute('aria-hidden', 'false');
   }
 
   function resumeDuelFromOverlay() {
     if (!state.duelGame || state.duelGame.phase !== 'paused') return;
     $('#duel-pause-overlay').classList.remove('show');
+    $('#duel-pause-overlay').setAttribute('aria-hidden', 'true');
     state.duelGame.resume();
   }
 

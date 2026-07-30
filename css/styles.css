@@ -718,7 +718,7 @@ body::before {
   transition: opacity 0.2s ease;
 }
 
-.duel-start-overlay.show {
+#page-duel-game.active .duel-start-overlay.show {
   opacity: 1;
   pointer-events: auto;
 }
@@ -739,7 +739,7 @@ body::before {
 .duel-start-overlay span { max-width: 560px; color: var(--text-secondary); font-size: 13px; line-height: 1.7; }
 .duel-start-overlay .duel-primary-btn { width: min(320px, 82vw); margin-top: 8px; }
 
-.duel-pause-overlay.show {
+#page-duel-game.active .duel-pause-overlay.show {
   opacity: 1;
   pointer-events: auto;
 }
