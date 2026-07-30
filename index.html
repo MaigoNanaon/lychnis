@@ -23,14 +23,6 @@
       <section class="page-header" aria-labelledby="page-title">
         <h1 id="page-title" class="page-title">Q-beat!</h1>
         <p class="page-subtitle">听歌 · 记忆节奏 · 模仿打击</p>
-        <button class="shadow-duel-entry" id="shadow-duel-entry-btn">
-          <span class="shadow-duel-entry-icon" aria-hidden="true">◐</span>
-          <span>
-            <strong>开始对决</strong>
-            <small>匹配一位旗鼓相当的节奏影子</small>
-          </span>
-          <span class="shadow-duel-entry-arrow" aria-hidden="true">›</span>
-        </button>
       </section>
 
       <nav class="tab-bar" role="tablist" aria-label="难度筛选">
@@ -253,9 +245,14 @@
         <button class="control-btn play-btn" id="btn-play" title="播放">▶</button>
       </div>
 
-      <button class="game-entry-btn" id="game-entry-btn">
-        开始Q-beat!
-      </button>
+      <div class="player-game-actions" aria-label="选择游戏模式">
+        <button class="game-entry-btn game-entry-solo" id="solo-game-entry-btn">
+          单人Q-beat！
+        </button>
+        <button class="game-entry-btn game-entry-duel" id="duel-game-entry-btn">
+          双人Q-beat！
+        </button>
+      </div>
     </div>
   </section>
 

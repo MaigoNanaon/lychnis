@@ -918,7 +918,6 @@
   // ============================================
   function bindEvents() {
     // 影子对决匹配
-    $('#shadow-duel-entry-btn').addEventListener('click', startShadowMatch);
     $('#duel-match-cancel-btn').addEventListener('click', cancelShadowMatch);
     $('#duel-match-cancel-secondary-btn').addEventListener('click', cancelShadowMatch);
     $('#duel-match-retry-btn').addEventListener('click', startShadowMatch);
@@ -947,7 +946,8 @@
     });
     $('#btn-play').addEventListener('click', togglePlay);
     $('#btn-stop').addEventListener('click', stopPlayer);
-    $('#game-entry-btn').addEventListener('click', openGame);
+    $('#solo-game-entry-btn').addEventListener('click', openGame);
+    $('#duel-game-entry-btn').addEventListener('click', startShadowMatch);
 
     $('#progress-bar').addEventListener('click', (e) => {
       if (!state.currentSong) return;
